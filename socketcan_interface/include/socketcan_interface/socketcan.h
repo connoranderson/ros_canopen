@@ -202,10 +202,15 @@ protected:
             if(frame_.can_id & CAN_ERR_FLAG){ // error message
                 input_.id = frame_.can_id & CAN_EFF_MASK;
                 input_.is_error = 1;
-
-                ROSCANOPEN_ERROR("socketcan_interface", "internal error: " << input_.id);
-                setInternalError(input_.id);
-                setNotReady();
+                
+                if (frame_.can_id & CAN_ERR_LOSTARB ||
+                    frame_.can_id & CAN_ERR_CRTL){
+                    ROSCANOPEN_WARN("socketcan_interface", "ignoring arbitration and controller errors ");
+                } else{
+                    ROSCANOPEN_ERROR("socketcan_interface", "internal error: " << input_.id);
+                    setInternalError(input_.id);
+                    setNotReady();
+                }
 
             }else{
                 input_.is_extended = (frame_.can_id & CAN_EFF_FLAG) ? 1 :0;
