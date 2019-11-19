@@ -13,10 +13,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from launch import LaunchDescription
 import launch.actions
 import launch.substitutions
-from launch import LaunchDescription
-
 import launch_ros.actions
 
 # TODO(sam): add automatic launch tests

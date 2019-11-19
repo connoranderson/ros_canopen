@@ -49,7 +49,7 @@ ARG CMAKE_BUILD_TYPE=Release
 WORKDIR $DEPENDENCIES_WS
 RUN . $ROS2_WS/install/local_setup.sh && \
      colcon build \
-       --symlink-install \
+       --merge-install \
        --cmake-args \
          -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
 
@@ -59,7 +59,7 @@ COPY can_msgs can_msgs
 COPY canopen_402 canopen_402
 COPY canopen_chain_node canopen_chain_node
 COPY canopen_master canopen_master
-COPY canopen_motor_node canopen_motor_node
+# COPY canopen_motor_node canopen_motor_node
 COPY canopen_msgs canopen_msgs
 COPY socketcan_bridge socketcan_bridge
 COPY socketcan_interface socketcan_interface
