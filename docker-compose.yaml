@@ -1,0 +1,16 @@
+version: '3.5'
+services:
+
+  ros_canopen_dev:
+    container_name: ros_canopen_dev
+    build: .
+    tty: true
+    command: tail -f /dev/null
+
+  ros2-web-bridge:
+    container_name: ros2-web-bridge
+    build: .
+    tty: true
+    ports:
+      - "9090:9090"
+    command: /opt/ros2-web-bridge/bin/rosbridge.js
