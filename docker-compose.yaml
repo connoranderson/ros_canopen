@@ -14,3 +14,11 @@ services:
     ports:
       - "9090:9090"
     command: /opt/ros2-web-bridge/bin/rosbridge.js
+
+  canopen-web-ui:
+    container_name: canopen-web-ui
+    build:
+     context: ./canopen-web-ui
+     dockerfile: Dockerfile
+    ports:
+     - "3000:3000"

@@ -1,0 +1,17 @@
+version: '3.5'
+services:
+
+  ros_canopen_dev:
+    volumes:
+      - ./can_msgs:/opt/overlay_ws/src/can_msgs
+      - ./canopen_402:/opt/overlay_ws/src/canopen_402
+      - ./canopen_chain_node:/opt/overlay_ws/src/canopen_canopen_chain_node
+      - ./canopen_master:/opt/overlay_ws/src/canopen_master
+      - ./canopen_motor_node:/opt/overlay_ws/src/canopen_motor_node
+      - ./canopen_msgs:/opt/overlay_ws/src/canopen_msgs
+      - ./socketcan_bridge:/opt/overlay_ws/src/socketcan_bridge
+      - ./socketcan_interface:/opt/overlay_ws/src/socketcan_interface
+
+  canopen-web-ui:
+    volumes:
+      - ./canopen-web-ui/src:/usr/src/app/src
