@@ -105,4 +105,5 @@ COPY tools $OVERLAY_WS/
 
 # source workspace from entrypoint if available
 COPY tools/can-bringup.sh /opt_ws/can-bringup.sh
+COPY tools/run_tests.bash /opt_ws/run_test.sh
 COPY ros_entrypoint.sh /
