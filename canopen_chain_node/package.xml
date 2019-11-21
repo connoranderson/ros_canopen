@@ -23,6 +23,7 @@
   <depend>diagnostic_updater</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
   <depend>socketcan_interface</depend> <!-- direct dependency needed for pluginlib look-up -->
   <depend>std_srvs</depend>
   <depend>std_msgs</depend>

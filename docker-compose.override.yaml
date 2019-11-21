@@ -2,6 +2,7 @@ version: '3.5'
 services:
 
   ros_canopen_dev:
+    network_mode: host
     volumes:
       - ./can_msgs:/opt/overlay_ws/src/can_msgs
       - ./canopen_402:/opt/overlay_ws/src/canopen_402

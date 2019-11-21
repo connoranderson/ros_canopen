@@ -13,24 +13,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <socketcan_interface/dispatcher.hpp>
-#include <socketcan_interface/socketcan.hpp>
-#include <canopen_chain_node/ros_chain.hpp>
+#include <canopen_chain_node/canopen_chain_component.hpp>
 
 #include <memory>
 
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<canopen::RosChain>();
+  auto node = std::make_shared<canopen_chain_node::CanopenChainComponent>();
 
-  if (!node->setup()) {
-    return 1;
-  }
-
-  rclcpp::spin(node);
+  rclcpp::spin(node->get_node_base_interface());
 
   rclcpp::shutdown();
   return 0;

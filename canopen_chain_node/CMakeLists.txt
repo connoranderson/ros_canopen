@@ -15,6 +15,7 @@ find_package(canopen_master REQUIRED)
 find_package(diagnostic_updater REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(socketcan_interface REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
@@ -29,43 +30,46 @@ find_package(Boost REQUIRED
 
 include_directories(
   include
+  ${rclcpp_lifecycle_INCLUDE_DIRS}
 )
 
-# canopen_ros_chain
-add_library(canopen_ros_chain SHARED
-  src/ros_chain.cpp
+# canopen_chain_component
+add_library(canopen_chain_component SHARED
+  src/canopen_chain_component.cpp
 )
 
-target_link_libraries(canopen_ros_chain
-  ${Boost_LIBRARIES}
+target_link_libraries(canopen_chain_component
+  ${rclcpp_lifecycle_LIBRARIES}
+  # ${Boost_LIBRARIES}
 )
 
-ament_target_dependencies(canopen_ros_chain
-  "class_loader"
-  "canopen_master"
-  "canopen_msgs"
-  "std_srvs"
-  "std_msgs"
-  "diagnostic_updater"
+ament_target_dependencies(canopen_chain_component
+  # "class_loader"
+  # "canopen_master"
+  # "canopen_msgs"
+  # "std_srvs"
+  # "std_msgs"
+  # "diagnostic_updater"
   "socketcan_interface"
-)
-
-# canopen_chain_node
-add_executable(${PROJECT_NAME}
-  src/chain_node.cpp
-)
-target_link_libraries(${PROJECT_NAME}
-  ${Boost_LIBRARIES}
-  canopen_ros_chain
-)
-
-ament_target_dependencies(${PROJECT_NAME}
-  "canopen_master"
-  "diagnostic_updater"
-  "socketcan_interface"
-  "std_srvs"
   "rclcpp"
-  "canopen_msgs"
+)
+
+# manual_composition
+add_executable(manual_composition
+  src/manual_composition.cpp
+)
+target_link_libraries(manual_composition
+  ${Boost_LIBRARIES}
+  canopen_chain_component
+)
+
+ament_target_dependencies(manual_composition
+  # "canopen_master"
+  # "diagnostic_updater"
+  # "socketcan_interface"
+  # "std_srvs"
+  "rclcpp"
+  # "canopen_msgs"
 )
 
 ament_export_dependencies(
@@ -80,10 +84,10 @@ ament_export_dependencies(
 )
 
 ament_export_include_directories(include)
-ament_export_libraries(canopen_ros_chain)
+ament_export_libraries(canopen_chain_component)
 
 install(TARGETS
-  canopen_ros_chain
+  canopen_chain_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -91,19 +95,13 @@ install(TARGETS
 
 install(
   TARGETS
-    ${PROJECT_NAME}
+    manual_composition
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
   DIRECTORY include/
   DESTINATION include
-)
-
-# Install launch files.
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
 )
 
 install(
