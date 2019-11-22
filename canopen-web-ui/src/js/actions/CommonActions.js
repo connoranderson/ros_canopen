@@ -53,6 +53,7 @@ class CommonActions {
         this.nodeName = 'canopen_chain'
 
         this.createServiceCallers();
+        this.createSubscriptions();
     }
 
     createServiceCallers = () => 
@@ -74,7 +75,21 @@ class CommonActions {
             name: this.nodeName + '/get_state',
             serviceType: 'lifecycle_msgs/srv/GetState'
         });
+    }
 
+    createSubscriptions = () => {
+        const rosoutTopic = new RosLib.Topic({
+            ros: this.rosClient,
+            name: 'rosout',
+            messageType : 'rcl_interfaces/msg/Log'
+          });
+
+        rosoutTopic.subscribe(message => {
+            dispatcher.dispatch({
+                type: 'ROSOUT_MSG',
+                rosout: message
+            });
+        });
     }
 
     refreshState = () =>
@@ -91,7 +106,6 @@ class CommonActions {
     {
         const request = new RosLib.ServiceRequest({});
         this.getLifecycleStateService.callService(request, response => {
-            console.log(response);
             dispatcher.dispatch({
                 type: 'LIFECYCLE_STATE',
                 currentState: response.current_state
@@ -120,6 +134,12 @@ class CommonActions {
                 availableTransitions: result.available_transitions
             });
         })
+    }
+
+    clearRosoutMessages = () => {
+        dispatcher.dispatch({
+            type: 'CLEAR_ROSOUT_MSGS'
+        });
     }
 
 }

@@ -11,9 +11,6 @@ import { IconButton, Typography } from '@material-ui/core';
 import RefreshIcon from '@material-ui/icons/Refresh';
 
 const styles = theme => ({
-  depositContext: {
-    flex: 1,
-  },
   button: {
     margin: theme.spacing(1),
   },
@@ -74,7 +71,7 @@ class Lifecycle extends React.Component {
           <IconButton
             onClick={() => CommonActions.callGetAvailableLifecycleTransitions()}
           >
-            <RefreshIcon/>
+            <RefreshIcon color='primary'/>
           </IconButton>
         </Grid>
         </Grid>

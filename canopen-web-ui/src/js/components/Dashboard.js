@@ -20,7 +20,7 @@ import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import { mainListItems } from './listItems';
 import Lifecycle from './Lifecycle';
-// import Orders from './Orders';
+import Rosout from './Rosout';
 
 function Copyright() {
   return (
@@ -142,7 +142,7 @@ export default function Dashboard() {
             <MenuIcon />
           </IconButton>
           <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
-            Dashboard
+            ROS2 CANopen
           </Typography>
           <IconButton color="inherit">
             <Badge badgeContent={0} color="secondary">
@@ -181,6 +181,7 @@ export default function Dashboard() {
             {/* Recent Deposits */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
+                <Rosout/>
               </Paper>
             </Grid>
             {/* Recent Orders */}

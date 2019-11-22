@@ -38,6 +38,33 @@ class CommonStore extends EventEmitter {
                     this.emit('change');
                     break;
                 }
+            case 'ROSOUT_MSG':
+                {
+                    if (action.rosout.name === 'canopen_chain') {
+                        const rosout_entry = {
+                            msg: action.rosout.msg,
+                            level: action.rosout.level,
+                            stamp: {
+                                sec: action.rosout.stamp.sec,
+                                nanosec: action.rosout.stamp.nanosec,
+                            }
+                        };
+
+                        this.state = this.state.update('rosoutMsgs',
+                            arr => arr.push(Immutable.fromJS(rosout_entry)));
+
+                        this.emit('change');
+                    }
+
+                    break;
+                }
+            case 'CLEAR_ROSOUT_MSGS':
+                {
+                    this.state = this.state.set('rosoutMsgs', Immutable.List());
+                    
+                    this.emit('change');
+                    break;
+                }
             default:
                 console.log(`action.type '${action.type}' not recognized!`);
         }
@@ -46,7 +73,8 @@ class CommonStore extends EventEmitter {
 
 CommonStore.defaultState = {
     availableLifecycleTransitions: [],
-    lifecycleState: 'not available'
+    lifecycleState: 'not available',
+    rosoutMsgs: []
 }
 
 const commonStore = new CommonStore();
