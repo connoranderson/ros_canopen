@@ -13,13 +13,14 @@ class CommonActions {
         let rosClient = new RosLib.Ros();
 
         rosClient.on('connection', () => {
-            console.log('Connected to websocket server.');
+            console.log('Connected to ros-web-bridge server.');
             dispatcher.dispatch({
                 type: 'ROS_CONNECTION_STATUS',
                 rosConnectionStatus: 'connected'
             });
             this.rosClient = rosClient;
             this.connectRos();
+            this.refreshState();
         });
 
         rosClient.on('error', (error) => {
@@ -47,22 +48,58 @@ class CommonActions {
         });
     }
 
-    connectRos = () =>
-    {
-        console.log("Connecting to topics!");
+    connectRos = () => {
         this.namespace = '';
+        this.nodeName = 'canopen_chain'
 
-        const nodeName = 'canopen_chain';
+        this.createServiceCallers();
+    }
 
+    createServiceCallers = () => 
+    {
         this.changeLifecycleChaneStateService = new RosLib.Service({
             ros: this.rosClient,
-            name: '/canopen_chain/change_state',
+            name: this.nodeName + '/change_state',
             serviceType: 'lifecycle_msgs/srv/ChangeState'
+        });
+
+        this.getAvailableLilfecycleTransitionsService = new RosLib.Service({
+            ros: this.rosClient,
+            name: this.nodeName + '/get_available_transitions',
+            serviceType: 'lifecycle_msgs/srv/GetAvailableTransitions'
+        });
+
+        this.getLifecycleStateService = new RosLib.Service({
+            ros: this.rosClient,
+            name: this.nodeName + '/get_state',
+            serviceType: 'lifecycle_msgs/srv/GetState'
+        });
+
+    }
+
+    refreshState = () =>
+    {
+        this.refreshLifecycleState();
+    }
+
+    refreshLifecycleState = () => {
+        this.callGetAvailableLifecycleTransitions();
+        this.callGetLifecycleStateService();
+    }
+
+    callGetLifecycleStateService = () =>
+    {
+        const request = new RosLib.ServiceRequest({});
+        this.getLifecycleStateService.callService(request, response => {
+            console.log(response);
+            dispatcher.dispatch({
+                type: 'LIFECYCLE_STATE',
+                currentState: response.current_state
+            });
         });
     }
 
-    callLifecycleChangeStateService = (transition) =>
-    {
+    callLifecycleChangeStateService = (transition) => {
         const request = new RosLib.ServiceRequest({
             transition: {
                 id: '',
@@ -70,11 +107,18 @@ class CommonActions {
             }
         });
 
-        console.log("transition clicked");
-        console.log(this.changeLifecycleChaneStateService);
-
         this.changeLifecycleChaneStateService.callService(request, result => {
-            console.log("Yey, transition success!!");
+            this.refreshLifecycleState();
+        })
+    }
+
+    callGetAvailableLifecycleTransitions = () => {
+        const request = new RosLib.ServiceRequest({});
+        this.getAvailableLilfecycleTransitionsService.callService(request, result => {
+            dispatcher.dispatch({
+                type: 'LIFECYCLE_AVAILABLE_TRANSITIONS',
+                availableTransitions: result.available_transitions
+            });
         })
     }
 
