@@ -21,6 +21,7 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import { mainListItems } from './listItems';
 import Lifecycle from './Lifecycle';
 import Rosout from './Rosout';
+import Rosparams from './Rosparams';
 
 function Copyright() {
   return (
@@ -172,24 +173,24 @@ export default function Dashboard() {
         <div className={classes.appBarSpacer} />
         <Container maxWidth="lg" className={classes.container}>
           <Grid container spacing={3}>
-            {/* Chart */}
-            <Grid item xs={12} md={8} lg={9}>
+            {/* Lifecycle */}
+            <Grid item xs={6} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
                 <Lifecycle />
               </Paper>
             </Grid>
-            {/* Recent Deposits */}
-            <Grid item xs={12} md={4} lg={3}>
+            {/* ROS Console */}
+            <Grid item xs={6} md={8} lg={9}>
               <Paper className={fixedHeightPaper}>
                 <Rosout/>
               </Paper>
             </Grid>
-            {/* Recent Orders */}
-            {/* <Grid item xs={12}>
+            {/*  Rosparams */}
+            <Grid item xs={12}>
               <Paper className={classes.paper}>
-                <Orders />
+                <Rosparams />
               </Paper>
-            </Grid> */}
+            </Grid>
           </Grid>
           <Box pt={4}>
             <Copyright />

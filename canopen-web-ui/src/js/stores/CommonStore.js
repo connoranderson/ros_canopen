@@ -61,7 +61,76 @@ class CommonStore extends EventEmitter {
             case 'CLEAR_ROSOUT_MSGS':
                 {
                     this.state = this.state.set('rosoutMsgs', Immutable.List());
-                    
+
+                    this.emit('change');
+                    break;
+                }
+            case 'PARAMETER_VALUES':
+                {
+                    // const PARAMETER_NOT_SET = 0
+                    const PARAMETER_BOOL = 1
+                    const PARAMETER_INTEGER = 2
+                    const PARAMETER_DOUBLE = 3
+                    const PARAMETER_STRING = 4
+                    // const PARAMETER_BYTE_ARRAY = 5
+                    // const PARAMETER_BOOL_ARRAY = 6
+                    // const PARAMETER_INTEGER_ARRAY = 7
+                    // const PARAMETER_DOUBLE_ARRAY = 8
+                    const PARAMETER_STRING_ARRAY = 9
+
+                    const rosParams = [];
+                    action.names.forEach((name, index) => {
+                        const paramValue = action.values[index];
+                        const { type } = paramValue;
+
+                        let typeName = 'not supported';
+                        let valueString = 'not supported';
+                        switch (type) {
+                            case PARAMETER_BOOL:
+                                {
+                                    typeName = 'bool';
+                                    valueString = paramValue.bool_value.toString();
+                                    break;
+                                }
+                            case PARAMETER_INTEGER:
+                                {
+                                    typeName = 'integer';
+                                    valueString = paramValue.integer_value.toString();
+                                    break;
+                                }
+                            case PARAMETER_DOUBLE:
+                                {
+                                    typeName = 'double';
+                                    valueString = paramValue.double_value.toString();
+                                    break;
+                                }
+                            case PARAMETER_STRING:
+                                {
+                                    typeName = 'string';
+                                    valueString = paramValue.string_value.toString();
+                                    break;
+                                }
+                            case PARAMETER_STRING_ARRAY:
+                                {
+                                    typeName = 'stringArray';
+                                    valueString = JSON.stringify(paramValue.string_array_value);
+                                    break;
+                                }
+                            default:
+                                {
+                                    console.log('Parameter of type ' + type.toString() + ' is not supported!');
+                                }
+                        }
+
+                        rosParams.push({
+                            name,
+                            type,
+                            typeName,
+                            valueString
+                        });
+                    });
+
+                    this.state = this.state.set('rosParams', Immutable.fromJS(rosParams));
                     this.emit('change');
                     break;
                 }
@@ -74,7 +143,8 @@ class CommonStore extends EventEmitter {
 CommonStore.defaultState = {
     availableLifecycleTransitions: [],
     lifecycleState: 'not available',
-    rosoutMsgs: []
+    rosoutMsgs: [],
+    rosParams: []
 }
 
 const commonStore = new CommonStore();

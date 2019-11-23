@@ -69,7 +69,7 @@ class Lifecycle extends React.Component {
         </Grid>
         <Grid item>
           <IconButton
-            onClick={() => CommonActions.callGetAvailableLifecycleTransitions()}
+            onClick={() => CommonActions.callGetAvailableLifecycleTransitionsService()}
           >
             <RefreshIcon color='primary'/>
           </IconButton>
