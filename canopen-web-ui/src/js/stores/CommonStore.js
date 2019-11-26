@@ -143,6 +143,23 @@ class CommonStore extends EventEmitter {
                     this.emit('change');
                     break;
                 }
+            case 'CANOPEN_OBJECT_VALUE':
+                {
+                    const canopenObjects = this.state.getIn(['canopenObjectDictionaries', action.nodeName]);
+                    canopenObjects.forEach( (canopenObject, index) => {
+                        if (canopenObject.get('index') === action.objectIndex) {
+                            this.state = this.state.setIn([
+                                'canopenObjectDictionaries',
+                                action.nodeName,
+                                index,
+                                'value'
+                            ], action.value);
+                            this.emit('change');
+                        }
+                    })
+
+                    break;
+                }
             default:
                 console.log(`action.type '${action.type}' not recognized!`);
         }

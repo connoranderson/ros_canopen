@@ -93,10 +93,16 @@ class CommonActions {
             serviceType: 'rcl_interfaces/srv/SetParameters'
         });
 
-        this.ListObjectDictionariesService = new RosLib.Service({
+        this.listObjectDictionariesService = new RosLib.Service({
             ros: this.rosClient,
             name: '/list_object_dictionaries',
             serviceType: 'canopen_msgs/srv/ListObjectDictionaries'
+        });
+
+        this.canopenGetObjectService = new RosLib.Service({
+            ros: this.rosClient,
+            name: '/get_object',
+            serviceType: 'canopen_msgs/srv/GetObject'
         });
     }
 
@@ -154,13 +160,34 @@ class CommonActions {
         const request = new RosLib.ServiceRequest({
             nodes: nodeNames
         });
-        this.ListObjectDictionariesService.callService(request, result => {
+        this.listObjectDictionariesService.callService(request, response => {
             dispatcher.dispatch({
                 type: 'CANOPEN_OBJECT_DICTIONARIES',
-                object_dictionaries: result.object_dictionaries
-            })
+                object_dictionaries: response.object_dictionaries
+            });
         })
+    }
 
+    callCanopenGetObjectService = (nodeName, canopenObject, cached) => {
+        const request = new RosLib.ServiceRequest({
+            node: nodeName,
+            object: canopenObject.index,
+            cached
+        });
+
+        this.canopenGetObjectService.callService(request, response => {
+            if (response.success) {
+                dispatcher.dispatch({
+                    type: 'CANOPEN_OBJECT_VALUE',
+                    nodeName: request.node,
+                    objectIndex: request.object,
+                    value: response.value
+                })
+            } else {
+                // console.warn("Failed to get canopen object: " + response.message);
+                alert("Failed to get canopen object: " + response.message);
+            }
+        })
     }
 
     callGetLifecycleStateService = () => {
@@ -181,20 +208,21 @@ class CommonActions {
             }
         });
 
-        this.changeLifecycleChaneStateService.callService(request, result => {
+        this.changeLifecycleChaneStateService.callService(request, response => {
             this.refreshLifecycleState();
         })
     }
 
     callGetAvailableLifecycleTransitionsService = () => {
         const request = new RosLib.ServiceRequest({});
-        this.getAvailableLilfecycleTransitionsService.callService(request, result => {
+        this.getAvailableLilfecycleTransitionsService.callService(request, response => {
             dispatcher.dispatch({
                 type: 'LIFECYCLE_AVAILABLE_TRANSITIONS',
-                availableTransitions: result.available_transitions
+                availableTransitions: response.available_transitions
             });
         })
     }
+
 
     clearRosoutMessages = () => {
         dispatcher.dispatch({

@@ -74,6 +74,11 @@ CanopenChainComponent::on_configure(const rclcpp_lifecycle::State &)
     std::bind(&CanopenChainComponent::handle_list_objet_dictionaries, this, 
     std::placeholders::_1, std::placeholders::_2));
 
+  srv_get_object_ = create_service<canopen_msgs::srv::GetObject>(
+    "get_object",
+    std::bind(&CanopenChainComponent::handle_get_object, this, 
+    std::placeholders::_1, std::placeholders::_2));
+
   if (configure_bus() && configure_sync() && configure_heartbeat() && 
       configure_defaults() && configure_nodes())
   {
@@ -123,17 +128,39 @@ void CanopenChainComponent::handle_list_objet_dictionaries(
         }
       }
 
-    // auto canopen_object_dictionary = nodes_lookup_()
-
-    // canopen::ObjectDict::ObjectDictMap::const_iterator entry_it;
-    // while(canopen_object_dictionary->iterate(entry_it))
-    // {
-    //   RCLCPP_INFO(this->get_logger(), "Object: %s", std::string(entry_it->first).c_str());
-    // }
     response->object_dictionaries.push_back(object_dict_msg);
   }
 
   std::flush(std::cout);
+}
+
+void CanopenChainComponent::handle_get_object(
+    const std::shared_ptr<canopen_msgs::srv::GetObject::Request> request,
+    std::shared_ptr<canopen_msgs::srv::GetObject::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Getting object: %s from node: %s", 
+              request->object.c_str(), request->node.c_str());
+
+  auto node_iterator = nodes_lookup_.find(request->node);
+  if (node_iterator == nodes_lookup_.end()) {
+    RCLCPP_WARN(this->get_logger(), "Node %s not found, can't get object!");
+    response->message = "node not found";
+    response->success = false;
+  } else {
+    try {
+      response->value = node_iterator->second->getStorage()->getStringReader(
+        canopen::ObjectDict::Key(request->object), request->cached)();
+      response->success = true;
+      
+    } catch (std::exception &e) {
+      RCLCPP_WARN(this->get_logger(), 
+                  "Exception while trying to read from object dictionary for %s: %s",
+                  request->node.c_str(),
+                  boost::diagnostic_information(e).c_str());
+      response->message = boost::diagnostic_information(e);
+    }
+  }
+  
 }
 
 bool CanopenChainComponent::configure_bus()

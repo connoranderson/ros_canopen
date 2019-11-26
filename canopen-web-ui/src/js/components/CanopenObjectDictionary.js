@@ -7,7 +7,7 @@ import Grid from '@material-ui/core/Grid'
 
 import CommonActions from '../actions/CommonActions';
 import CommonStore from '../stores/CommonStore';
-import { IconButton, Menu } from '@material-ui/core';
+import IconButton from '@material-ui/core/IconButton';
 import RefreshIcon from '@material-ui/icons/Refresh';
 
 import MaterialTable from 'material-table';
@@ -15,8 +15,13 @@ import MaterialTable from 'material-table';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
+import InputLabel from '@material-ui/core/InputLabel';
 
 const styles = theme => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 140,
+  }
 });
 
 class Rosparams extends React.Component {
@@ -52,7 +57,7 @@ class Rosparams extends React.Component {
   };
 
   render() {
-    // const { classes } = this.props;
+    const { classes } = this.props;
     const { selectedNode } = this.state;
 
     let canopenNodes = [];
@@ -85,7 +90,8 @@ class Rosparams extends React.Component {
           <Title>Object Dictionary</Title>
         </Grid>
         <Grid item>
-          <FormControl>
+          <FormControl className={classes.formControl}>
+            <InputLabel>CANopen Node</InputLabel>
             <Select 
               value={selectedNode}
               onChange={this.handleNodeSelectorChange}  
@@ -118,9 +124,14 @@ class Rosparams extends React.Component {
               })}}
           actions={[
             rowData => ({
+              icon: 'get_app',
+              tooltip: 'Read value from device',
+              onClick: (event, rowData) => CommonActions.callCanopenGetObjectService(selectedNode, rowData, false)
+            }),
+            rowData => ({
               icon: 'refresh',
-              tooltip: 'Refresh Value',
-              onClick: (event, rowData) => alert("You saved " + rowData.name)
+              tooltip: 'Read cached value',
+              onClick: (event, rowData) => CommonActions.callCanopenGetObjectService(selectedNode, rowData, true)
             })
           ]}
         />

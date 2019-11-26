@@ -173,23 +173,23 @@ export default function Dashboard() {
       <main className={classes.content}>
         <div className={classes.appBarSpacer} />
         <Container maxWidth="lg" className={classes.container}>
+          <Grid container spacing={3}>
             {/*  CANopen Object Dictionary */}
             <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <CanopenObjectDictionary />
               </Paper>
             </Grid>
-          <Grid container spacing={3}>
-            {/* ROS Console */}
-            <Grid item xs={12} md={8} lg={9}>
-              <Paper className={fixedHeightPaper}>
-                <Rosout/>
-              </Paper>
-            </Grid>
             {/* Lifecycle */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
                 <Lifecycle />
+              </Paper>
+            </Grid>
+            {/* ROS Console */}
+            <Grid item xs={12} md={8} lg={9}>
+              <Paper className={fixedHeightPaper}>
+                <Rosout/>
               </Paper>
             </Grid>
             {/*  Rosparams */}
