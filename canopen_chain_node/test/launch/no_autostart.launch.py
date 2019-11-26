@@ -12,35 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Laucher for canopen_chain"""
+"""Laucher for canopen_chain without lifecycle autostart."""
 
 import os
 
-import launch
-
 from ament_index_python import get_package_share_directory
+
+import launch
+from launch.actions.execute_process import ExecuteProcess
+
 from launch_ros.actions import LifecycleNode
 
 
 def generate_launch_description():
-
+    """Generate launch description."""
     test_params = os.path.join(
-      get_package_share_directory('canopen_chain_node'),
-      'test/config/chain_node_params.yaml'
+        get_package_share_directory('canopen_chain_node'),
+        'test/config/chain_node_params.yaml'
+    )
+
+    chain_node = LifecycleNode(
+        node_name='canopen_chain',
+        package='canopen_chain_node',
+        node_executable='manual_composition',
+        output='screen',
+        parameters=[
+            test_params
+        ]
+    )
+
+    ros2_web_bridge = ExecuteProcess(
+        cmd=['node', '/opt/ros2-web-bridge/bin/rosbridge.js'],
+        output='screen'
     )
 
     ld = launch.LaunchDescription()
-
-    chain_node = LifecycleNode(
-      node_name='canopen_chain',
-      package='canopen_chain_node',
-      node_executable='manual_composition',
-      output='screen',
-      parameters=[
-        test_params
-      ]
-    )
-
     ld.add_action(chain_node)
+    ld.add_action(ros2_web_bridge)
 
     return ld

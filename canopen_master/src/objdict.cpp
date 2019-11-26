@@ -220,7 +220,8 @@ void parse_object(ObjectDictSharedPtr dict, boost::property_tree::iptree &pt, co
     try{
         entry->index = int_from_string<uint16_t>(name);
         entry->obj_code = ObjectDict::Code(int_from_string<uint16_t>(object->get<std::string>("ObjectType", boost::lexical_cast<std::string>((uint16_t)ObjectDict::VAR))));
-        entry->desc = object->get<std::string>("Denotation",object->get<std::string>("ParameterName"));
+        // NOTE(sam): Don't get how desc was supposed to work before I changed it. Appeard to always end up empty...
+        entry->desc = object->get<std::string>("ParameterName");
 
         // std::cout << name << ": "<< entry->desc << std::endl;
         if(entry->obj_code == ObjectDict::VAR || entry->obj_code == ObjectDict::DOMAIN_DATA || sub_index){

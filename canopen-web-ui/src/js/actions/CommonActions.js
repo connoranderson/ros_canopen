@@ -1,7 +1,6 @@
 import dispatcher from '../dispatcher';
 
 import RosLib from 'roslib';
-import { Collection } from 'immutable';
 
 class CommonActions {
     constructor() {
@@ -93,6 +92,12 @@ class CommonActions {
             name: this.nodeName + '/set_parameters',
             serviceType: 'rcl_interfaces/srv/SetParameters'
         });
+
+        this.ListObjectDictionariesService = new RosLib.Service({
+            ros: this.rosClient,
+            name: '/list_object_dictionaries',
+            serviceType: 'canopen_msgs/srv/ListObjectDictionaries'
+        });
     }
 
     createSubscriptions = () => {
@@ -144,6 +149,19 @@ class CommonActions {
         });
     }
 
+    refreshObjectDictionaries = (nodeNames) =>
+    {
+        const request = new RosLib.ServiceRequest({
+            nodes: nodeNames
+        });
+        this.ListObjectDictionariesService.callService(request, result => {
+            dispatcher.dispatch({
+                type: 'CANOPEN_OBJECT_DICTIONARIES',
+                object_dictionaries: result.object_dictionaries
+            })
+        })
+
+    }
 
     callGetLifecycleStateService = () => {
         const request = new RosLib.ServiceRequest({});

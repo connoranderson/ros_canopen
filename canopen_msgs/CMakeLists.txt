@@ -13,12 +13,19 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
+set(msg_files
+  "msg/ObjectDictionary.msg"
+  "msg/ObjectDescription.msg"
+)
+
 set(srv_files
   "srv/GetObject.srv"
   "srv/SetObject.srv"
+  "srv/ListObjectDictionaries.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
   ${srv_files}
   ADD_LINTER_TESTS
 )

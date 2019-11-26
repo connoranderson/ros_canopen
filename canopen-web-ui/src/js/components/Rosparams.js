@@ -13,12 +13,6 @@ import RefreshIcon from '@material-ui/icons/Refresh';
 import MaterialTable from 'material-table';
 
 const styles = theme => ({
-  button: {
-    margin: theme.spacing(1),
-  },
-  table: {
-    color: 'primary',
-  }
 });
 
 class Rosparams extends React.Component {
@@ -45,15 +39,13 @@ class Rosparams extends React.Component {
   }
 
   render() {
-    const { classes } = this.props;
-
-    const rosParams = this.state.rosParams.toJS();
+    // const { classes } = this.props;
 
     return (
       <React.Fragment>
         <Grid container justify='space-between'>
         <Grid item>
-          <Title>Rosparams</Title>
+          <Title>Parameters</Title>
         </Grid>
         <Grid item>
           <IconButton
@@ -65,7 +57,7 @@ class Rosparams extends React.Component {
         </Grid>
         <MaterialTable
           columns={[
-            { title: "Name", field: "name" },
+            { title: "Name", field: "name" , editable: 'never'},
             { title: "Value", field: "valueString" },
           ]}
           data={this.state.rosParams.toJS()}

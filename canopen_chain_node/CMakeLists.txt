@@ -40,16 +40,16 @@ add_library(canopen_chain_component SHARED
 
 target_link_libraries(canopen_chain_component
   ${rclcpp_lifecycle_LIBRARIES}
-  # ${Boost_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 
 ament_target_dependencies(canopen_chain_component
-  # "class_loader"
-  # "canopen_master"
-  # "canopen_msgs"
-  # "std_srvs"
-  # "std_msgs"
-  # "diagnostic_updater"
+  "class_loader"
+  "canopen_master"
+  "canopen_msgs"
+  "std_srvs"
+  "std_msgs"
+  "diagnostic_updater"
   "socketcan_interface"
   "rclcpp"
 )
@@ -59,7 +59,7 @@ add_executable(manual_composition
   src/manual_composition.cpp
 )
 target_link_libraries(manual_composition
-  ${Boost_LIBRARIES}
+  # ${Boost_LIBRARIES}
   canopen_chain_component
 )
 

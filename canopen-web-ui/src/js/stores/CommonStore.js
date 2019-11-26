@@ -134,6 +134,15 @@ class CommonStore extends EventEmitter {
                     this.emit('change');
                     break;
                 }
+            case 'CANOPEN_OBJECT_DICTIONARIES':
+                {
+                    action.object_dictionaries.forEach( dictionary => {
+                        this.state = this.state.setIn(['canopenObjectDictionaries', dictionary.node], Immutable.fromJS(dictionary.object_descriptions));
+                    })
+
+                    this.emit('change');
+                    break;
+                }
             default:
                 console.log(`action.type '${action.type}' not recognized!`);
         }
@@ -144,7 +153,8 @@ CommonStore.defaultState = {
     availableLifecycleTransitions: [],
     lifecycleState: 'not available',
     rosoutMsgs: [],
-    rosParams: []
+    rosParams: [],
+    canopenObjectDictionaries: {}
 }
 
 const commonStore = new CommonStore();

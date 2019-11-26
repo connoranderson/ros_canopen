@@ -10,7 +10,8 @@
                 "${workspaceFolder}/canopen_msgs/**",
                 "${workspaceFolder}/socketcan_bridge/**",
                 "${workspaceFolder}/socketcan_interface/**",
-                "${workspaceFolder}/docker_includes/**"
+                "${workspaceFolder}/docker_includes/**",
+                "${workspaceFolder}/docker_includes/overlay_include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

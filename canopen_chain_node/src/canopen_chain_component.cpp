@@ -15,27 +15,34 @@
 
 #include "canopen_chain_node/canopen_chain_component.hpp"
 
-// #include <string>
-// #include <memory>
+#include <string>
+#include <experimental/filesystem>
+#include <memory>
 // #include <map>
-// #include <vector>
+#include <vector>
 // #include <utility>
 
 // using namespace canopen_chain_node;
+
+using namespace std::chrono_literals;
 
 namespace canopen_chain_node
 {
 
 CanopenChainComponent::CanopenChainComponent()
-: LifecycleNode("canopen_chain")
+: LifecycleNode("canopen_chain"), LayerStack("ROS Stack"),
+  driver_loader_("socketcan_interface", "can::DriverInterface"),
+  master_allocator_("canopen_master", "canopen::Master::Allocator")
 {
   RCLCPP_INFO(this->get_logger(), "Creating canopen_chain component");
 
   // bus
   declare_parameter("bus.device", rclcpp::ParameterValue("can0"));
   declare_parameter("bus.loopback", rclcpp::ParameterValue("false"));
-  declare_parameter("bus.driver_plugin", rclcpp::ParameterValue("socketcan_interface/SocketCANInterface"));
-  declare_parameter("bus.master_allocator", rclcpp::ParameterValue("canopen_master/SimpleMasterAllocator"));
+  declare_parameter("bus.driver_plugin",
+    rclcpp::ParameterValue("socketcan_interface/SocketCANInterface"));
+  declare_parameter("bus.master_allocator",
+    rclcpp::ParameterValue("canopen_master/SimpleMasterAllocator"));
 
   // sync
   declare_parameter("sync.overflow", rclcpp::ParameterValue(10));
@@ -62,54 +69,117 @@ CanopenChainComponent::on_configure(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Configuring canopen_chain");
 
-  if (!configure_bus())
+  srv_list_object_dictionaries_ = create_service<canopen_msgs::srv::ListObjectDictionaries>(
+    "list_object_dictionaries",
+    std::bind(&CanopenChainComponent::handle_list_objet_dictionaries, this, 
+    std::placeholders::_1, std::placeholders::_2));
+
+  if (configure_bus() && configure_sync() && configure_heartbeat() && 
+      configure_defaults() && configure_nodes())
   {
+    std::flush(std::cout);
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
+  } else
+  {
+    std::flush(std::cout);
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
   }
 
-  if (!configure_sync())
-  {
-    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
-  }
+}
 
-  if (!configure_heartbeat())
-  {
-    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
-  }
+void CanopenChainComponent::handle_list_objet_dictionaries(
+    const std::shared_ptr<canopen_msgs::srv::ListObjectDictionaries::Request> request,
+    std::shared_ptr<canopen_msgs::srv::ListObjectDictionaries::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Listing object dictionaries!");
 
-  if (!configure_defaults())
-  {
-    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
-  }
+  for (auto node_name: request->nodes) {
+    RCLCPP_INFO(this->get_logger(), "Listing object dictionary for node %s", node_name.c_str());
 
-  if (!configure_nodes())
-  {
-    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
+    auto object_dict_msg = canopen_msgs::msg::ObjectDictionary();
+    object_dict_msg.node = node_name;
+
+     std::map<std::string, canopen::NodeSharedPtr>::iterator it =
+      nodes_lookup_.find(node_name);
+      if (it == nodes_lookup_.end()) {
+        RCLCPP_WARN(this->get_logger(), "Node %s not found, can't list object dictionary");
+      } else {
+        try {
+          canopen::ObjectDict::ObjectDictMap::const_iterator entry_it;
+          while(it->second->getStorage()->dict_->iterate(entry_it))
+          {
+            // RCLCPP_INFO(this->get_logger(), "Object: %s", std::string(entry_it->first).c_str());
+            auto object_description_msg = canopen_msgs::msg::ObjectDescription();
+            object_description_msg.index = std::string(entry_it->first);
+            object_description_msg.parameter_name = std::string(entry_it->second->desc);
+            object_description_msg.readable = entry_it->second->readable;
+            object_description_msg.writable = entry_it->second->writable;
+
+            object_dict_msg.object_descriptions.push_back(object_description_msg);
+            // RCLCPP_INFO(this->get_logger(), "Object: %s", std::string(entry_it->second->).c_str());
+          }
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), boost::diagnostic_information(e));
+        }
+      }
+
+    // auto canopen_object_dictionary = nodes_lookup_()
+
+    // canopen::ObjectDict::ObjectDictMap::const_iterator entry_it;
+    // while(canopen_object_dictionary->iterate(entry_it))
+    // {
+    //   RCLCPP_INFO(this->get_logger(), "Object: %s", std::string(entry_it->first).c_str());
+    // }
+    response->object_dictionaries.push_back(object_dict_msg);
   }
 
   std::flush(std::cout);
-  return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
 
 bool CanopenChainComponent::configure_bus()
 {
   RCLCPP_INFO(this->get_logger(), "Configuring bus");
 
-  std::string bus_device;
-  get_parameter("bus.device", bus_device);
-  RCLCPP_INFO(this->get_logger(), "bus.device: %s", bus_device.c_str());
-
-  bool loopback;
-  get_parameter("bus.loopback", loopback);
-  RCLCPP_INFO(this->get_logger(), "bus.loopback: %s", loopback ? "true" : "false");
-
+  std::string can_device;
   std::string driver_plugin;
+  std::string master_allocator;
+  bool loopback;
+
+  get_parameter("bus.device", can_device);
+  RCLCPP_INFO(this->get_logger(), "bus.device: %s", can_device.c_str());
+
   get_parameter("bus.driver_plugin", driver_plugin);
   RCLCPP_INFO(this->get_logger(), "bus.driver_plugin: %s", driver_plugin.c_str());
 
-  std::string master_allocator;
   get_parameter("bus.master_allocator", master_allocator);
   RCLCPP_INFO(this->get_logger(), "bus.master_allocator: %s", master_allocator.c_str());
+
+  get_parameter("bus.loopback", loopback);
+  RCLCPP_INFO(this->get_logger(), "bus.loopback: %s", loopback ? "true" : "false");
+
+  try {
+    interface_ = driver_loader_.createInstance(driver_plugin);
+  } catch (pluginlib::PluginlibException & ex) {
+    RCLCPP_ERROR(this->get_logger(), ex.what());
+    return false;
+  }
+
+  // TODO(sam): create state listener
+  try {
+    master_ = master_allocator_.allocateInstance(master_allocator, can_device, interface_);
+  } catch (const std::exception &e)
+  {
+    // TODO(sam): get boost diagnostic_information
+    // std::string info = boost::diagnostic_information(e);
+    RCLCPP_ERROR(this->get_logger(), "Got execption while loading master allocator!");
+    return false;
+  }
+
+  if (!master_) {
+    RCLCPP_ERROR(this->get_logger(), "Could not allocate master");
+  }
+
+  add(std::make_shared<canopen::CANLayer>(interface_, can_device, loopback));
 
   return true;
 }
@@ -118,17 +188,27 @@ bool CanopenChainComponent::configure_sync()
 {
   RCLCPP_INFO(this->get_logger(), "Configuring sync");
 
-  int overflow;
-  get_parameter("sync.overflow", overflow);
-  RCLCPP_INFO(this->get_logger(), "sync.overflow: %d", overflow);
+  int sync_overflow;
+  get_parameter("sync.overflow", sync_overflow);
+  RCLCPP_INFO(this->get_logger(), "sync.overflow: %d", sync_overflow);
 
-  int interval_ms;
-  get_parameter("sync.interval_ms", interval_ms);
-  RCLCPP_INFO(this->get_logger(), "sync.interval_ms: %d", interval_ms);
+  int sync_interval_ms;
+  get_parameter("sync.interval_ms", sync_interval_ms);
+  RCLCPP_INFO(this->get_logger(), "sync.interval_ms: %d", sync_interval_ms);
 
   int update_ms;
   get_parameter("sync.update_ms", update_ms);
   RCLCPP_INFO(this->get_logger(), "sync.update_ms: %d", update_ms);
+
+  update_period_ms_ = update_ms; 
+
+  // sync_ = master_->getSync(
+  //   canopen::SyncProperties(can::MsgHeader(0x80), sync_interval_ms, sync_overflow));
+
+  // if (!sync_ && sync_interval_ms) {
+  //   RCLCPP_ERROR(this->get_logger(), "Initializing sync master failed");
+  //   return false;
+  // }
 
   return true;
 }
@@ -168,23 +248,107 @@ bool CanopenChainComponent::configure_nodes()
   std::vector<std::string> canopen_nodes;
   get_parameter("canopen_nodes", canopen_nodes);
 
-  for (auto &node_name : canopen_nodes)
-  {
-    int node_id = -1; 
-    declare_parameter(node_name + ".id", rclcpp::ParameterValue(node_id));
-    get_parameter(node_name + ".id", node_id);
-    if (node_id == -1)
+  for (auto & node_name : canopen_nodes) {
+    if(!configure_node(node_name))
     {
-      RCLCPP_ERROR(this->get_logger(), "No node_id specified for %s, aborting!", node_name.c_str());
       return false;
     }
-    RCLCPP_INFO(this->get_logger(), "%s id: %d", node_name.c_str(), node_id);
-
-    declare_parameter(node_name + ".eds_file", rclcpp::ParameterValue(default_eds_file_));
-    std::string eds_file;
-    get_parameter(node_name + ".eds_file", eds_file);
-    RCLCPP_INFO(this->get_logger(), "%s eds_file: %s", node_name.c_str(), eds_file.c_str());
   }
+
+  return true;
+}
+
+bool CanopenChainComponent::configure_node(std::string node_name)
+{
+  // Read parameters
+  int node_id = -1;
+  if (!get_parameter(node_name + ".id", node_id)) {
+    declare_parameter(node_name + ".id", rclcpp::ParameterValue(node_id));
+    get_parameter(node_name + ".id", node_id);
+  }
+
+  if (node_id == -1) {
+    RCLCPP_ERROR(this->get_logger(), "No node_id specified for %s, aborting!", node_name.c_str());
+    return false;
+  }
+  RCLCPP_INFO(this->get_logger(), "%s id: %d", node_name.c_str(), node_id);
+
+  std::string eds_file;
+  if (!get_parameter(node_name + ".eds_file", eds_file)) {
+    declare_parameter(node_name + ".eds_file", rclcpp::ParameterValue(default_eds_file_));
+    get_parameter(node_name + ".eds_file", eds_file);
+  }
+  RCLCPP_INFO(this->get_logger(), "%s eds_file: %s", node_name.c_str(), eds_file.c_str());
+
+  std::string eds_pkg;
+  if (!get_parameter(node_name + ".eds_pkg", eds_pkg)) {
+    declare_parameter(node_name + ".eds_pkg", rclcpp::ParameterValue(default_eds_pkg_));
+    get_parameter(node_name + ".eds_pkg", eds_pkg);
+  }
+  RCLCPP_INFO(this->get_logger(), "%s eds_pkg: %s", node_name.c_str(), eds_pkg.c_str());
+
+  // Find and parse Electronic Data Sheet (EDS)
+  std::string eds_pkg_share_directory = "";
+  std::string eds_full_path = eds_file;
+
+  if (!eds_pkg.empty()) {
+    try {
+      eds_pkg_share_directory =
+          ament_index_cpp::get_package_share_directory(eds_pkg);
+    } catch (...) {
+      RCLCPP_ERROR(this->get_logger(), "eds_pkg share directory not found!");
+      return false;
+    }
+
+    eds_full_path =
+        (std::experimental::filesystem::path(eds_pkg_share_directory) / eds_file)
+            .make_preferred()
+            .native();
+  }
+  RCLCPP_DEBUG(this->get_logger(), node_name + " eds full path: %s",
+              eds_full_path.c_str());
+
+  auto exists = [this](const std::string &name) -> bool {
+      struct stat buffer;
+      return stat(name.c_str(), &buffer) == 0;
+  };
+
+  if (!exists(eds_full_path)) {
+    RCLCPP_ERROR(this->get_logger(),
+                  node_name + " eds file: %s does not exist!",
+                  eds_full_path.c_str());
+    return false;
+  }
+
+  canopen::ObjectDict::Overlay canopen_object_dict_overlay;
+  canopen::ObjectDictSharedPtr canopen_object_dictionary;
+  // TODO(sam): parse overlay from params
+  try {
+     canopen_object_dictionary = 
+      canopen::ObjectDict::fromFile(eds_full_path, canopen_object_dict_overlay);
+    if (!canopen_object_dictionary) {
+      RCLCPP_ERROR(this->get_logger(),
+                  "EDS '" + eds_file + "' could not be parsed!");
+      return false;
+    }
+  } catch (std::runtime_error& re) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Runtime error while parsing '" + eds_file + "': " + re.what());
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Exception while parsing '" + eds_file + "'!");
+    return false;
+  }
+
+  // TODO(sam): Use sync argument when creating node
+  canopen::NodeSharedPtr node =
+    std::make_shared<canopen::Node>(interface_, canopen_object_dictionary, 
+                                    node_id);
+
+  nodes_.reset(new canopen::LayerGroupNoDiag<canopen::Node>("301 layer"));
+  nodes_->add(node);
+  nodes_lookup_.insert(std::make_pair(node_name, node));
 
   return true;
 }
@@ -193,14 +357,45 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Activating canopen_chain");
+
+  if (getLayerState() > Off) {
+    RCLCPP_WARN(this->get_logger(), "Already initialized!");
+  }
+
+  // TODO(sam): Make optional implementation using a dedicated thread and "sleep_until". Don't use boost?
+  update_periodic_timer_ = create_wall_timer(
+    std::chrono::milliseconds(update_period_ms_), std::bind(&CanopenChainComponent::update_callback, this));
+
   std::flush(std::cout);
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
+}
+
+void CanopenChainComponent::update_callback()
+{
+  // RCLCPP_INFO(this->get_logger(), "In update");
+  // std::flush(std::cout);
+  canopen::LayerStatus layer_status;
+  try {
+    read(layer_status);
+    write(layer_status);
+
+    if (!layer_status.bounded<canopen::LayerStatus::Warn>()) {
+      RCLCPP_ERROR_ONCE(this->get_logger(), layer_status.reason());
+    } else if (!layer_status.bounded<canopen::LayerStatus::Ok>()) {
+      RCLCPP_WARN_ONCE(this->get_logger(), layer_status.reason());
+    }
+  } catch (const canopen::Exception &e) {
+    RCLCPP_ERROR(this->get_logger(), boost::diagnostic_information(e));
+  }
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CanopenChainComponent::on_deactivate(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Deactivating canopen_chain");
+
+  update_periodic_timer_->cancel();
+
   std::flush(std::cout);
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
@@ -209,6 +404,12 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CanopenChainComponent::on_cleanup(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Cleaning up canopen_chain");
+
+  srv_list_object_dictionaries_.reset();
+
+  nodes_.reset();
+  nodes_lookup_.empty();
+
   std::flush(std::cout);
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }

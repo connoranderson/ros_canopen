@@ -1,0 +1,2 @@
+string node
+ObjectDescription[] object_descriptions
