@@ -20,6 +20,7 @@
 #include <canopen_master/can_layer.hpp>
 #include <canopen_msgs/srv/list_object_dictionaries.hpp>
 #include <canopen_msgs/srv/get_object.hpp>
+#include <canopen_msgs/srv/set_object.hpp>
 #include <canopen_msgs/msg/object_dictionary.hpp>
 #include <canopen_msgs/msg/object_description.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -149,6 +150,7 @@ private:
 
   rclcpp::Service<canopen_msgs::srv::ListObjectDictionaries>::SharedPtr srv_list_object_dictionaries_;
   rclcpp::Service<canopen_msgs::srv::GetObject>::SharedPtr srv_get_object_;
+  rclcpp::Service<canopen_msgs::srv::SetObject>::SharedPtr srv_set_object_;
 
   void update_callback();
 
@@ -166,6 +168,10 @@ private:
   void handle_get_object(
       const std::shared_ptr<canopen_msgs::srv::GetObject::Request> request,
       std::shared_ptr<canopen_msgs::srv::GetObject::Response> response);
+
+  void handle_set_object(
+      const std::shared_ptr<canopen_msgs::srv::SetObject::Request> request,
+      std::shared_ptr<canopen_msgs::srv::SetObject::Response> response);
   };
  
 }  // namespace canopen_chain_node

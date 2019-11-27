@@ -79,6 +79,11 @@ CanopenChainComponent::on_configure(const rclcpp_lifecycle::State &)
     std::bind(&CanopenChainComponent::handle_get_object, this, 
     std::placeholders::_1, std::placeholders::_2));
 
+  srv_set_object_ = create_service<canopen_msgs::srv::SetObject>(
+    "set_object",
+    std::bind(&CanopenChainComponent::handle_set_object, this, 
+    std::placeholders::_1, std::placeholders::_2));
+
   if (configure_bus() && configure_sync() && configure_heartbeat() && 
       configure_defaults() && configure_nodes())
   {
@@ -162,6 +167,34 @@ void CanopenChainComponent::handle_get_object(
   }
   
 }
+
+void CanopenChainComponent::handle_set_object(
+      const std::shared_ptr<canopen_msgs::srv::SetObject::Request> request,
+      std::shared_ptr<canopen_msgs::srv::SetObject::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Setting object: %s from node: %s to: %s", 
+              request->object.c_str(), request->node.c_str(), request->value.c_str());
+
+  auto node_iterator = nodes_lookup_.find(request->node);
+  if (node_iterator == nodes_lookup_.end()) {
+    response->message = "node not found";
+  } else {
+    try {
+      node_iterator->second->getStorage()->getStringWriter(
+        canopen::ObjectDict::Key(request->object), 
+        request->cached)(request->value);
+        response->success = true;
+    } catch (std::exception &e) {
+      RCLCPP_WARN(this->get_logger(), 
+                  "Exception while trying to write to object dictionary for %s: %s",
+                  request->node.c_str(),
+                  boost::diagnostic_information(e).c_str());
+      response->message = boost::diagnostic_information(e);
+    }
+  }
+ 
+}
+
 
 bool CanopenChainComponent::configure_bus()
 {

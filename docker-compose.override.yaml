@@ -13,8 +13,8 @@ services:
       - ./socketcan_bridge:/opt/overlay_ws/src/socketcan_bridge
       - ./socketcan_interface:/opt/overlay_ws/src/socketcan_interface
 
-  ros2-web-bridge:
-    network_mode: host
+  # ros2-web-bridge:
+  #   network_mode: host
     
   canopen-web-ui:
     volumes:
