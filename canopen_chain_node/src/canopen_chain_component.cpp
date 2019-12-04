@@ -32,9 +32,14 @@ namespace canopen_chain_node
 CanopenChainComponent::CanopenChainComponent()
 : LifecycleNode("canopen_chain"), LayerStack("ROS Stack"),
   driver_loader_("socketcan_interface", "can::DriverInterface"),
-  master_allocator_("canopen_master", "canopen::Master::Allocator")
+  master_allocator_("canopen_master", "canopen::Master::Allocator"),
+  diagnostic_updater_(this)
 {
   RCLCPP_INFO(this->get_logger(), "Creating canopen_chain component");
+
+  std::string hardware_id = "Chain Node";
+  diagnostic_updater_.setHardwareID(hardware_id);
+  diagnostic_updater_.add("chain", this, &CanopenChainComponent::report_diagnostics);
 
   // bus
   declare_parameter("bus.device", rclcpp::ParameterValue("can0"));
@@ -62,6 +67,30 @@ CanopenChainComponent::CanopenChainComponent()
   declare_parameter("canopen_nodes", rclcpp::ParameterValue(std::vector<std::string>(nodes)));
 
   std::flush(std::cout);
+}
+
+void CanopenChainComponent::report_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat)
+{
+  // TODO(sam): add mutex
+  canopen::LayerReport report;
+  if (canopen::Layer::getLayerState() == canopen::Layer::Off) 
+  {
+    stat.summary(stat.WARN, "Not initialized");
+  } else
+  {
+    diag(report);
+    if (report.bounded<canopen::LayerStatus::Unbounded>())
+    {
+      // NOTE(sam): I think this runs if the  report is "valid"...
+      stat.summary(report.get(), report.reason());
+      for (std::vector<std::pair<std::string, std::string>>::const_iterator it =
+           report.values().begin(); it != report.values().end(); ++it)
+      {
+        stat.add(it->first, it->second);
+      }
+    }
+  }
+  
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -150,6 +179,7 @@ void CanopenChainComponent::handle_get_object(
     try {
       response->value = node_iterator->second->getStorage()->getStringReader(
         canopen::ObjectDict::Key(request->object), request->cached)();
+      response->message = "Got object without issues!";
       response->success = true;
       
     } catch (std::exception &e) {
@@ -271,6 +301,8 @@ bool CanopenChainComponent::configure_defaults()
 bool CanopenChainComponent::configure_nodes()
 {
   RCLCPP_INFO(this->get_logger(), "Configuring nodes");
+  nodes_.reset(new canopen::LayerGroupNoDiag<canopen::Node>("301 layer"));
+  add(nodes_);
 
   std::vector<std::string> canopen_nodes;
   get_parameter("canopen_nodes", canopen_nodes);
@@ -373,7 +405,11 @@ bool CanopenChainComponent::configure_node(std::string node_name)
     std::make_shared<canopen::Node>(interface_, canopen_object_dictionary, 
                                     node_id);
 
-  nodes_.reset(new canopen::LayerGroupNoDiag<canopen::Node>("301 layer"));
+  LoggerSharedPtr logger = std::make_shared<Logger>(node);
+  loggers_.push_back(logger);
+  diagnostic_updater_.add(node_name,
+                          std::bind(&Logger::log, logger, std::placeholders::_1));
+
   nodes_->add(node);
   nodes_lookup_.insert(std::make_pair(node_name, node));
 
@@ -388,6 +424,24 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
   if (getLayerState() > Off) {
     RCLCPP_WARN(this->get_logger(), "Already initialized!");
   }
+
+  canopen::LayerReport status;
+  try {
+    init(status);
+  } catch (const std::exception &e) {
+    std::string info = boost::diagnostic_information(e);
+    RCLCPP_ERROR(this->get_logger(), info);
+    // response->message = info;
+    // status.error(response->message);
+  } catch (...) {
+    RCLCPP_ERROR(this->get_logger(), "Unknown error while initializng CAN Layers");
+    // response->message = "Unknown exception";
+    // status.error(response->message);
+  }
+
+  RCLCPP_INFO(this->get_logger(), "CAN init has finished!");
+
+  //shutdown(status);
 
   // TODO(sam): Make optional implementation using a dedicated thread and "sleep_until". Don't use boost?
   update_periodic_timer_ = create_wall_timer(

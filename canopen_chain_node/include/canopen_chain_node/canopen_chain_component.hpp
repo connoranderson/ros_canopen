@@ -22,10 +22,13 @@
 #include <canopen_msgs/srv/get_object.hpp>
 #include <canopen_msgs/msg/object_dictionary.hpp>
 #include <canopen_msgs/msg/object_description.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <socketcan_interface/interface.hpp>
 #include <pluginlib/class_loader.hpp>
+
+#include "canopen_chain_helpers.hpp"
 
 #include <chrono>
 #include <memory>
@@ -37,72 +40,6 @@
 
 namespace canopen_chain_node
 {
-
-class GuardedClassLoaderList
-{
-public:
-  typedef std::shared_ptr<pluginlib::ClassLoaderBase> ClassLoaderBaseSharedPtr;
-  static void addLoader(ClassLoaderBaseSharedPtr b)
-  {
-    guarded_loaders().push_back(b);
-  }
-  ~GuardedClassLoaderList()
-  {
-    guarded_loaders().clear();
-  }
-
-private:
-  static std::vector<ClassLoaderBaseSharedPtr> & guarded_loaders()
-  {
-    static std::vector<ClassLoaderBaseSharedPtr> loaders;
-    return loaders;
-  }
-};
-
-template<typename T>
-class GuardedClassLoader
-{
-  typedef pluginlib::ClassLoader<T> Loader;
-  std::shared_ptr<Loader> loader_;
-
-public:
-  typedef std::shared_ptr<T> ClassSharedPtr;
-  GuardedClassLoader(const std::string & package, const std::string & allocator_base_class)
-  : loader_(new Loader(package, allocator_base_class))
-  {
-    GuardedClassLoaderList::addLoader(loader_);
-  }
-  ClassSharedPtr createInstance(const std::string & lookup_name)
-  {
-    return loader_->createUniqueInstance(lookup_name);
-  }
-};
-
-template<typename T>
-class ClassAllocator : public GuardedClassLoader<typename T::Allocator>
-{
-public:
-  typedef std::shared_ptr<T> ClassSharedPtr;
-  ClassAllocator(const std::string & package, const std::string & allocator_base_class)
-  : GuardedClassLoader<typename T::Allocator>(package, allocator_base_class) {}
-  template<typename T1>
-  ClassSharedPtr allocateInstance(const std::string & lookup_name, const T1 & t1)
-  {
-    return this->createInstance(lookup_name)->allocate(t1);
-  }
-  template<typename T1, typename T2>
-  ClassSharedPtr allocateInstance(const std::string & lookup_name, const T1 & t1, const T2 & t2)
-  {
-    return this->createInstance(lookup_name)->allocate(t1, t2);
-  }
-  template<typename T1, typename T2, typename T3>
-  ClassSharedPtr allocateInstance(
-    const std::string & lookup_name, const T1 & t1, const T2 & t2,
-    const T3 & t3)
-  {
-    return this->createInstance(lookup_name)->allocate(t1, t2, t3);
-  }
-};
 
 
 class CanopenChainComponent : GuardedClassLoaderList, public canopen::LayerStack, public rclcpp_lifecycle::LifecycleNode
@@ -150,8 +87,13 @@ private:
   rclcpp::Service<canopen_msgs::srv::ListObjectDictionaries>::SharedPtr srv_list_object_dictionaries_;
   rclcpp::Service<canopen_msgs::srv::GetObject>::SharedPtr srv_get_object_;
 
-  void update_callback();
+  diagnostic_updater::Updater diagnostic_updater_;
+  std::vector<LoggerSharedPtr> loggers_;
 
+  void update_callback();
+  void report_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat);
+
+  // lifecycle
   bool configure_bus();
   bool configure_sync();
   bool configure_heartbeat();

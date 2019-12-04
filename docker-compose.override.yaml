@@ -3,6 +3,7 @@ services:
 
   ros_canopen_dev:
     network_mode: host
+    privileged: true
     volumes:
       - ./can_msgs:/opt/overlay_ws/src/can_msgs
       - ./canopen_402:/opt/overlay_ws/src/canopen_402
@@ -13,9 +14,9 @@ services:
       - ./socketcan_bridge:/opt/overlay_ws/src/socketcan_bridge
       - ./socketcan_interface:/opt/overlay_ws/src/socketcan_interface
 
-  ros2-web-bridge:
-    network_mode: host
+  # ros2-web-bridge:
+  #   network_mode: host
     
   canopen-web-ui:
-    volumes:
+    volumes: 
       - ./canopen-web-ui/src:/usr/src/app/src
