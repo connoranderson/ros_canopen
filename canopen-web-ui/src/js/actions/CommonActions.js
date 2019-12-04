@@ -104,6 +104,12 @@ class CommonActions {
             name: '/get_object',
             serviceType: 'canopen_msgs/srv/GetObject'
         });
+
+        this.canopenSetObjectService = new RosLib.Service({
+            ros: this.rosClient,
+            name: '/set_object',
+            serviceType: 'canopen_msgs/srv/SetObject'
+        });
     }
 
     createSubscriptions = () => {
@@ -182,12 +188,12 @@ class CommonActions {
                     nodeName: request.node,
                     objectIndex: request.object,
                     value: response.value
-                })
+                });
             } else {
                 // console.warn("Failed to get canopen object: " + response.message);
                 alert("Failed to get canopen object: " + response.message);
             }
-        })
+        });
     }
 
     callGetLifecycleStateService = () => {
@@ -227,6 +233,25 @@ class CommonActions {
     clearRosoutMessages = () => {
         dispatcher.dispatch({
             type: 'CLEAR_ROSOUT_MSGS'
+        });
+    }
+
+    updateCanopenObject = (newData, oldData, nodeName) => {
+        const request = new RosLib.ServiceRequest({
+            node: nodeName,
+            object: oldData.index,
+            value: newData.value,
+            cached: true
+        });
+
+        this.canopenSetObjectService.callService(request, response => {
+            if (response.success) {
+               console.log("Success setting object");
+               this.callCanopenGetObjectService(nodeName, newData, true);
+            } else {
+                // console.warn("Failed to get canopen object: " + response.message);
+                alert("Failed to set canopen object: " + response.message);
+            }
         });
     }
 

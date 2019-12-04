@@ -119,7 +119,7 @@ class Rosparams extends React.Component {
           editable={{
             onRowUpdate: (newData, oldData) => 
               new Promise(resolve => {
-                CommonActions.updateRosParameter(newData, oldData);
+                CommonActions.updateCanopenObject(newData, oldData, selectedNode);
                 resolve();
               })}}
           actions={[
