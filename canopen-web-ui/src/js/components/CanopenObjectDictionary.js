@@ -16,6 +16,8 @@ import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import InputLabel from '@material-ui/core/InputLabel';
+import Switch from '@material-ui/core/Switch';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
 
 const styles = theme => ({
   formControl: {
@@ -31,7 +33,8 @@ class Rosparams extends React.Component {
     this.state = {
       rosParams: CommonStore.getState().get('rosParams'),
       canopenObjectDictionaries: CommonStore.getState().get('canopenObjectDictionaries'),
-      selectedNode: ''
+      selectedNode: '',
+      cached: false
     };
   }
 
@@ -54,7 +57,14 @@ class Rosparams extends React.Component {
     this.setState({
       selectedNode: event.target.value
     });
+    CommonActions.refreshObjectDictionaries([event.target.value]);
   };
+
+  handleToDeviceChange = event => {
+    this.setState({
+      cached: event.target.checked
+    });
+  }
 
   render() {
     const { classes } = this.props;
@@ -83,6 +93,41 @@ class Rosparams extends React.Component {
       canopenDictionaryEntries = this.state.canopenObjectDictionaries.get('node_1').toJS()
     }
 
+    const data_type_names = [
+      'Unknown',
+      'Unknown',
+      'Int8',
+      'Int16',
+      'Int32',
+      'UInt8',
+      'UInt16',
+      'UInt32',
+      'Real32',
+      'VisibleString',
+      'OctetString',
+      'UnicodeString',
+      'Unknow',
+      'Unknown',
+      'Unknown',
+      'Domain',
+      'Real64',
+      'Unknow',
+      'Unknown',
+      'Unknow',
+      'Unknown',
+      'Int64',
+      'Unknow',
+      'Unknown',
+      'Unknow',
+      'Unknown',
+      'Unknown',
+      'UInt64',
+    ]
+
+    canopenDictionaryEntries.forEach( entry => {
+      entry.data_type_name = data_type_names[entry.data_type]
+    });
+
     return (
       <React.Fragment>
         <Grid container justify='space-between'>
@@ -101,6 +146,17 @@ class Rosparams extends React.Component {
           </FormControl>
         </Grid>
         <Grid item>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={this.state.cached}
+              onChange={this.handleToDeviceChange}
+            />
+          }
+          label='Cached'
+        />
+        </Grid>
+        <Grid item>
           <IconButton
             onClick={() => CommonActions.refreshObjectDictionaries(canopenNodes)}
           >
@@ -110,9 +166,10 @@ class Rosparams extends React.Component {
         </Grid>
         <MaterialTable
           columns={[
-            { title: "Index", field: "index", editable: 'never'},
-            { title: "Parameter Name", field: "parameter_name", editable: 'never'},
-            { title: "Value", field: "value" },
+            { title: 'Index', field: 'index', editable: 'never'},
+            { title: 'Parameter Name', field: 'parameter_name', editable: 'never'},
+            { title: 'Data Type', field: 'data_type_name', editable: 'never'},
+            { title: 'Value', field: 'value' },
           ]}
           data={canopenDictionaryEntries}
           title={selectedNode}
@@ -124,14 +181,9 @@ class Rosparams extends React.Component {
               })}}
           actions={[
             rowData => ({
-              icon: 'get_app',
-              tooltip: 'Read value from device',
-              onClick: (event, rowData) => CommonActions.callCanopenGetObjectService(selectedNode, rowData, false)
-            }),
-            rowData => ({
               icon: 'refresh',
-              tooltip: 'Read cached value',
-              onClick: (event, rowData) => CommonActions.callCanopenGetObjectService(selectedNode, rowData, true)
+              tooltip: 'Read value',
+              onClick: (event, rowData) => CommonActions.callCanopenGetObjectService(selectedNode, rowData, this.state.cached)
             })
           ]}
         />

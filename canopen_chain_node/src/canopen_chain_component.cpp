@@ -147,15 +147,14 @@ void CanopenChainComponent::handle_list_objet_dictionaries(
           canopen::ObjectDict::ObjectDictMap::const_iterator entry_it;
           while(it->second->getStorage()->dict_->iterate(entry_it))
           {
-            // RCLCPP_INFO(this->get_logger(), "Object: %s", std::string(entry_it->first).c_str());
             auto object_description_msg = canopen_msgs::msg::ObjectDescription();
             object_description_msg.index = std::string(entry_it->first);
             object_description_msg.parameter_name = std::string(entry_it->second->desc);
+            object_description_msg.data_type = entry_it->second->data_type;
             object_description_msg.readable = entry_it->second->readable;
             object_description_msg.writable = entry_it->second->writable;
 
             object_dict_msg.object_descriptions.push_back(object_description_msg);
-            // RCLCPP_INFO(this->get_logger(), "Object: %s", std::string(entry_it->second->).c_str());
           }
         } catch (std::exception &e) {
           RCLCPP_WARN(this->get_logger(), boost::diagnostic_information(e));
@@ -175,6 +174,15 @@ void CanopenChainComponent::handle_get_object(
   RCLCPP_INFO(this->get_logger(), "Getting object: %s from node: %s", 
               request->object.c_str(), request->node.c_str());
 
+  if (!request->cached && getLayerState() == Off)
+  {
+    std::string error_message = "Reading data from device is not possible when main layer is 'Off'";
+    RCLCPP_WARN(this->get_logger(), error_message);
+    response->message = error_message;
+    response->success = false;
+    return;
+  }
+
   auto node_iterator = nodes_lookup_.find(request->node);
   if (node_iterator == nodes_lookup_.end()) {
     RCLCPP_WARN(this->get_logger(), "Node %s not found, can't get object!");
@@ -182,8 +190,12 @@ void CanopenChainComponent::handle_get_object(
     response->success = false;
   } else {
     try {
-      response->value = node_iterator->second->getStorage()->getStringReader(
+      std::string value = node_iterator->second->getStorage()->getStringReader(
         canopen::ObjectDict::Key(request->object), request->cached)();
+      // NOTE(sam): the \x symbol is not properly handled in ros2-web-bridge, 
+      // removing for now to make the web-ui work
+      response->value = value;
+
       response->message = "Got object without issues!";
       response->success = true;
       
@@ -204,6 +216,16 @@ void CanopenChainComponent::handle_set_object(
 {
   RCLCPP_INFO(this->get_logger(), "Setting object: %s from node: %s to: %s", 
               request->object.c_str(), request->node.c_str(), request->value.c_str());
+
+
+  if (!request->cached && getLayerState() == Off)
+  {
+    std::string error_message = "Writing data to device is not possible when main layer is 'Off'";
+    RCLCPP_WARN(this->get_logger(), error_message);
+    response->message = error_message;
+    response->success = false;
+    return;
+  }
 
   auto node_iterator = nodes_lookup_.find(request->node);
   if (node_iterator == nodes_lookup_.end()) {
@@ -335,7 +357,9 @@ bool CanopenChainComponent::configure_nodes()
 {
   RCLCPP_INFO(this->get_logger(), "Configuring nodes");
   nodes_.reset(new canopen::LayerGroupNoDiag<canopen::Node>("301 layer"));
-  add(nodes_);
+
+  emcy_handlers_.reset(
+    new canopen::LayerGroupNoDiag<canopen::EMCYHandler>("EMCY layer"));
 
   std::vector<std::string> canopen_nodes;
   get_parameter("canopen_nodes", canopen_nodes);
@@ -346,6 +370,9 @@ bool CanopenChainComponent::configure_nodes()
       return false;
     }
   }
+  
+  add(nodes_);
+  // add(emcy_handlers_);
 
   return true;
 }
@@ -439,12 +466,17 @@ bool CanopenChainComponent::configure_node(std::string node_name)
                                     node_id);
 
   LoggerSharedPtr logger = std::make_shared<Logger>(node);
-  loggers_.push_back(logger);
   diagnostic_updater_.add(node_name,
                           std::bind(&Logger::log, logger, std::placeholders::_1));
-
   nodes_->add(node);
   nodes_lookup_.insert(std::make_pair(node_name, node));
+
+  std::shared_ptr<canopen::EMCYHandler> emcy =
+        std::make_shared<canopen::EMCYHandler>(interface_, node->getStorage());
+  emcy_handlers_->add(emcy);
+  logger->add(emcy);
+
+  loggers_.push_back(logger);
 
   return true;
 }
@@ -481,6 +513,10 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
     std::chrono::milliseconds(update_period_ms_), std::bind(&CanopenChainComponent::update_callback, this));
 
   std::flush(std::cout);
+  if (getLayerState() == Off) {
+    RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available?");
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
+  }
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
 

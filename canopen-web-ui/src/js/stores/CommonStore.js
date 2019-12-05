@@ -148,12 +148,23 @@ class CommonStore extends EventEmitter {
                     const canopenObjects = this.state.getIn(['canopenObjectDictionaries', action.nodeName]);
                     canopenObjects.forEach( (canopenObject, index) => {
                         if (canopenObject.get('index') === action.objectIndex) {
+                            let value = action.value;
+                            // NOTE(sam): for some reason, the canopen_master string
+                            // reader represents numbers by using ascii character codes.
+                            if (canopenObject.get('data_type') === 5)
+                            {
+                                let valueAsHexNubmer = '0x';
+                                value.split('').forEach(letter => {
+                                    valueAsHexNubmer += letter.charCodeAt(0);
+                                })
+                                value = valueAsHexNubmer;
+                            }
                             this.state = this.state.setIn([
                                 'canopenObjectDictionaries',
                                 action.nodeName,
                                 index,
                                 'value'
-                            ], action.value);
+                            ], value);
                             this.emit('change');
                         }
                     })

@@ -82,6 +82,9 @@ private:
 
   std::shared_ptr<canopen::LayerGroupNoDiag<canopen::Node>> nodes_;
   std::map<std::string, canopen::NodeSharedPtr> nodes_lookup_;
+  diagnostic_updater::Updater diagnostic_updater_;
+  std::vector<LoggerSharedPtr> loggers_;
+  std::shared_ptr<canopen::LayerGroupNoDiag<canopen::EMCYHandler>> emcy_handlers_;
 
   rclcpp::TimerBase::SharedPtr update_periodic_timer_;
 
@@ -89,8 +92,6 @@ private:
   rclcpp::Service<canopen_msgs::srv::GetObject>::SharedPtr srv_get_object_;
   rclcpp::Service<canopen_msgs::srv::SetObject>::SharedPtr srv_set_object_;
 
-  diagnostic_updater::Updater diagnostic_updater_;
-  std::vector<LoggerSharedPtr> loggers_;
 
   void update_callback();
   void report_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat);

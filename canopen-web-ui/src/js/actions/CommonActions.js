@@ -249,7 +249,6 @@ class CommonActions {
                console.log("Success setting object");
                this.callCanopenGetObjectService(nodeName, newData, true);
             } else {
-                // console.warn("Failed to get canopen object: " + response.message);
                 alert("Failed to set canopen object: " + response.message);
             }
         });
