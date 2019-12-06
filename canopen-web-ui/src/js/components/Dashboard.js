@@ -23,6 +23,7 @@ import Lifecycle from './Lifecycle';
 import Rosout from './Rosout';
 import Rosparams from './Rosparams';
 import CanopenObjectDictionary from './CanopenObjectDictionary';
+import RuntimeMonitor from './RuntimeMonitor';
 
 function Copyright() {
   return (
@@ -116,6 +117,9 @@ const useStyles = makeStyles(theme => ({
   fixedHeight: {
     height: 240,
   },
+  fixedHeightHalf: {
+    height: 170,
+  },
 }));
 
 export default function Dashboard() {
@@ -128,6 +132,7 @@ export default function Dashboard() {
     setOpen(false);
   };
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
+  const fixedHeightHalfPaper = clsx(classes.paper, classes.fixedHeightHalf);
 
   return (
     <div className={classes.root}>
@@ -174,16 +179,22 @@ export default function Dashboard() {
         <div className={classes.appBarSpacer} />
         <Container maxWidth="lg" className={classes.container}>
           <Grid container spacing={3}>
+            {/* Lifecycle */}
+            <Grid item xs={12} md={4} lg={3}>
+              <Paper className={fixedHeightHalfPaper}>
+                <Lifecycle />
+              </Paper>
+            </Grid>
+            {/*  CANopen Object Dictionary */}
+            <Grid item xs={12}>
+              <Paper className={classes.paper}>
+                <RuntimeMonitor />
+              </Paper>
+            </Grid>
             {/*  CANopen Object Dictionary */}
             <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <CanopenObjectDictionary />
-              </Paper>
-            </Grid>
-            {/* Lifecycle */}
-            <Grid item xs={12} md={4} lg={3}>
-              <Paper className={fixedHeightPaper}>
-                <Lifecycle />
               </Paper>
             </Grid>
             {/* ROS Console */}

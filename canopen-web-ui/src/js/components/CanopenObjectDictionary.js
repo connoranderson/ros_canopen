@@ -47,10 +47,16 @@ class Rosparams extends React.Component {
   }
 
   storeChange = () => {
-    this.setState({
-      rosParams: CommonStore.getState().get('rosParams'),
-      canopenObjectDictionaries: CommonStore.getState().get('canopenObjectDictionaries')
-    })
+    // Only update state if params of objectDictionary in store has changed
+    // Running render while editing a Material Table row seems to break stuff
+    if (this.state.rosParams !== CommonStore.getState().get('rosParams') ||
+        this.state.canopenObjectDictionaries !== CommonStore.getState().get('canopenObjectDictionaries'))
+    {
+      this.setState({
+        rosParams: CommonStore.getState().get('rosParams'),
+        canopenObjectDictionaries: CommonStore.getState().get('canopenObjectDictionaries')
+      });
+    }
   }
 
   handleNodeSelectorChange = event => {

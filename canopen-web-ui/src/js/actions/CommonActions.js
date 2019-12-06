@@ -2,6 +2,8 @@ import dispatcher from '../dispatcher';
 
 import RosLib from 'roslib';
 
+// TODO(sam): figure out how to refactor/split up this...
+
 class CommonActions {
     constructor() {
         this.createRosClient('localhost', '9090');
@@ -123,6 +125,19 @@ class CommonActions {
             dispatcher.dispatch({
                 type: 'ROSOUT_MSG',
                 rosout: message
+            });
+        });
+
+        this.diagnosticsListener = new RosLib.Topic({
+            ros: this.rosClient,
+            name: '/diagnostics',
+            messageType: 'diagnostic_msgs/DiagnosticArray'
+        });
+
+        this.diagnosticsListener.subscribe(message => {
+            dispatcher.dispatch({
+                type: 'DIAGNOSTIC_ITEMS',
+                diagnosticItems: message.status
             });
         });
     }

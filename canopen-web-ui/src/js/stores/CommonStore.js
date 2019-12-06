@@ -153,11 +153,9 @@ class CommonStore extends EventEmitter {
                             // reader represents numbers by using ascii character codes.
                             if (canopenObject.get('data_type') === 5)
                             {
-                                let valueAsHexNubmer = '0x';
-                                value.split('').forEach(letter => {
-                                    valueAsHexNubmer += letter.charCodeAt(0);
-                                })
-                                value = valueAsHexNubmer;
+                                let valueAsDecimalNubmer = '';
+                                valueAsDecimalNubmer += value.charCodeAt(0);
+                                value = valueAsDecimalNubmer;
                             }
                             this.state = this.state.setIn([
                                 'canopenObjectDictionaries',
@@ -167,8 +165,23 @@ class CommonStore extends EventEmitter {
                             ], value);
                             this.emit('change');
                         }
-                    })
+                    });
 
+                    break;
+                }
+            case 'DIAGNOSTIC_ITEMS':
+                {
+                    let diagnosticItemMap = {};
+                    action.diagnosticItems.forEach(diagnosticItem => {
+                        diagnosticItemMap[diagnosticItem.name] = Immutable.fromJS(diagnosticItem);
+                    });
+
+                    this.state = this.state.set(
+                        'diagnosticItems',
+                        this.state.get('diagnosticItems').merge(diagnosticItemMap)
+                    );
+
+                    this.emit('change');
                     break;
                 }
             default:
@@ -182,7 +195,8 @@ CommonStore.defaultState = {
     lifecycleState: 'not available',
     rosoutMsgs: [],
     rosParams: [],
-    canopenObjectDictionaries: {}
+    canopenObjectDictionaries: {},
+    diagnosticItems: {},
 }
 
 const commonStore = new CommonStore();

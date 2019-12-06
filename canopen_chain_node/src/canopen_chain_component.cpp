@@ -39,7 +39,7 @@ CanopenChainComponent::CanopenChainComponent()
 
   std::string hardware_id = "Chain Node";
   diagnostic_updater_.setHardwareID(hardware_id);
-  diagnostic_updater_.add("chain", this, &CanopenChainComponent::report_diagnostics);
+  diagnostic_updater_.add("canopen main", this, &CanopenChainComponent::report_diagnostics);
 
   // bus
   declare_parameter("bus.device", rclcpp::ParameterValue("can0"));
@@ -372,7 +372,7 @@ bool CanopenChainComponent::configure_nodes()
   }
   
   add(nodes_);
-  // add(emcy_handlers_);
+  add(emcy_handlers_);
 
   return true;
 }
@@ -514,7 +514,7 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
 
   std::flush(std::cout);
   if (getLayerState() == Off) {
-    RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available?");
+    RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available? Is device power on?");
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
   }
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
