@@ -30,6 +30,7 @@
 #include <pluginlib/class_loader.hpp>
 
 #include "canopen_chain_helpers.hpp"
+#include "io_subcomponent.hpp"
 
 #include <chrono>
 #include <memory>
@@ -85,6 +86,7 @@ private:
   diagnostic_updater::Updater diagnostic_updater_;
   std::vector<LoggerSharedPtr> loggers_;
   std::shared_ptr<canopen::LayerGroupNoDiag<canopen::EMCYHandler>> emcy_handlers_;
+  std::vector<std::shared_ptr<IOSubcomponent>> io_profile_subcomponents_;
 
   rclcpp::TimerBase::SharedPtr update_periodic_timer_;
 

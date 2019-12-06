@@ -36,6 +36,7 @@ include_directories(
 # canopen_chain_component
 add_library(canopen_chain_component SHARED
   src/canopen_chain_component.cpp
+  src/io_subcomponent.cpp
 )
 
 target_link_libraries(canopen_chain_component
@@ -64,12 +65,7 @@ target_link_libraries(manual_composition
 )
 
 ament_target_dependencies(manual_composition
-  # "canopen_master"
-  # "diagnostic_updater"
-  # "socketcan_interface"
-  # "std_srvs"
   "rclcpp"
-  # "canopen_msgs"
 )
 
 ament_export_dependencies(

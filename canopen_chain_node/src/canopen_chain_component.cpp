@@ -477,7 +477,17 @@ bool CanopenChainComponent::configure_node(std::string node_name)
   logger->add(emcy);
 
   loggers_.push_back(logger);
-
+  // CANopen IO profile (401)
+  io_profile_subcomponents_.push_back(std::make_shared<IOSubcomponent>(
+    this->get_node_base_interface(),
+    this->get_node_logging_interface(),
+    this->get_node_timers_interface(),
+    this->get_node_topics_interface(),
+    this->get_node_services_interface(),
+    node_name,
+    node
+  ));
+  
   return true;
 }
 

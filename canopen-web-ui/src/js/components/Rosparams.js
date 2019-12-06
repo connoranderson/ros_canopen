@@ -33,9 +33,11 @@ class Rosparams extends React.Component {
   }
 
   storeChange = () => {
-    this.setState({
-      rosParams: CommonStore.getState().get('rosParams')
-    })
+    if (this.state.rosParams !== CommonStore.getState().get('rosParams')) {
+      this.setState({
+        rosParams: CommonStore.getState().get('rosParams')
+      });
+    }
   }
 
   render() {
