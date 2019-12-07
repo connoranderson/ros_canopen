@@ -140,6 +140,17 @@ class CommonActions {
                 diagnosticItems: message.status
             });
         });
+
+        this.lifecycleTransitionEvent = new RosLib.Topic({
+            ros: this.rosClient,
+            name: '/canopen_chain/transition_event',
+            messageType: 'lifecycle_msgs/msg/TransitionEvent'
+        });
+
+        this.lifecycleTransitionEvent.subscribe(message => {
+            this.callGetAvailableLifecycleTransitionsService();
+            this.callGetLifecycleStateService();
+        });
     }
 
     refreshState = () => {
@@ -261,7 +272,6 @@ class CommonActions {
 
         this.canopenSetObjectService.callService(request, response => {
             if (response.success) {
-               console.log("Success setting object");
                this.callCanopenGetObjectService(nodeName, newData, true);
             } else {
                 alert("Failed to set canopen object: " + response.message);
@@ -329,7 +339,6 @@ class CommonActions {
             });
 
             this.setParametersService.callService(request, response => {
-                console.log()
                 this.refreshParameters();
             });
         }

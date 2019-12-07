@@ -487,7 +487,7 @@ bool CanopenChainComponent::configure_node(std::string node_name)
     node_name,
     node
   ));
-  
+
   return true;
 }
 
@@ -506,12 +506,10 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
   } catch (const std::exception &e) {
     std::string info = boost::diagnostic_information(e);
     RCLCPP_ERROR(this->get_logger(), info);
-    // response->message = info;
-    // status.error(response->message);
+    status.error(info);
   } catch (...) {
-    RCLCPP_ERROR(this->get_logger(), "Unknown error while initializng CAN Layers");
-    // response->message = "Unknown exception";
-    // status.error(response->message);
+    RCLCPP_ERROR(this->get_logger(), "Unknown exception while initializng CAN Layers");
+    status.error("Unknown exception while initializng CAN Layers");
   }
 
   RCLCPP_INFO(this->get_logger(), "CAN init has finished!");
@@ -527,13 +525,17 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
     RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available? Is device power on?");
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
   }
+
+  for(auto const& io_profile_subcomponent: io_profile_subcomponents_)
+  {
+    io_profile_subcomponent->activate();
+  }
+
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
 
 void CanopenChainComponent::update_callback()
 {
-  // RCLCPP_INFO(this->get_logger(), "In update");
-  // std::flush(std::cout);
   canopen::LayerStatus layer_status;
   try {
     read(layer_status);
@@ -541,6 +543,10 @@ void CanopenChainComponent::update_callback()
 
     if (!layer_status.bounded<canopen::LayerStatus::Warn>()) {
       RCLCPP_ERROR_ONCE(this->get_logger(), layer_status.reason());
+      // NOTE(sam): node starts printing sdo, no response messages
+      // and becomes unresponsive to callbacks if one node is shut off
+      // just deactivate on warnings for now...
+      trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
     } else if (!layer_status.bounded<canopen::LayerStatus::Ok>()) {
       RCLCPP_WARN_ONCE(this->get_logger(), layer_status.reason());
     }
@@ -554,7 +560,31 @@ CanopenChainComponent::on_deactivate(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Deactivating canopen_chain");
 
+  canopen::LayerReport status;
+  try {
+    this->Layer::shutdown(status);
+  } catch (const std::exception &e) {
+    std::string info = boost::diagnostic_information(e);
+    RCLCPP_ERROR(this->get_logger(), info);
+    status.error(info);
+  } catch (...) {
+    RCLCPP_ERROR(this->get_logger(), "Unknown exception while shutting down CAN Layers");
+    status.error("Unknown exception while shutting down CAN Layers");
+  }
+
   update_periodic_timer_->cancel();
+
+  for(auto const& io_profile_subcomponent: io_profile_subcomponents_)
+  {
+    io_profile_subcomponent->deactivate();
+  }
+
+  // Attempt to recover all nodes
+  for (auto const& canopen_node_entry: nodes_lookup_)
+  {
+    canopen::LayerStatus layer_status;
+    canopen_node_entry.second->recover(layer_status);
+  }
 
   std::flush(std::cout);
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
@@ -565,10 +595,16 @@ CanopenChainComponent::on_cleanup(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Cleaning up canopen_chain");
 
+  // FIXME(sam): Not able to completly clean up after and recreate canopen nodes at this time.
+
   srv_list_object_dictionaries_.reset();
+
+  // NOTE(sam): Should remove all "layers" added with this->add(), not sure it works...
+  destroy();
 
   nodes_.reset();
   nodes_lookup_.empty();
+  io_profile_subcomponents_.empty();
 
   std::flush(std::cout);
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;

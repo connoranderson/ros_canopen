@@ -24,6 +24,7 @@
 #include <canopen_msgs/msg/object_dictionary.hpp>
 #include <canopen_msgs/msg/object_description.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
+#include <lifecycle_msgs/msg/transition.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <socketcan_interface/interface.hpp>
@@ -93,7 +94,6 @@ private:
   rclcpp::Service<canopen_msgs::srv::ListObjectDictionaries>::SharedPtr srv_list_object_dictionaries_;
   rclcpp::Service<canopen_msgs::srv::GetObject>::SharedPtr srv_get_object_;
   rclcpp::Service<canopen_msgs::srv::SetObject>::SharedPtr srv_set_object_;
-
 
   void update_callback();
   void report_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat);

@@ -31,6 +31,9 @@ IOSubcomponent::IOSubcomponent(
 {
     base_interface_ = base_interface;
     timers_interface_ = timers_interface;
+    logging_interface_ = logging_interface;
+
+    canopen_node_name_ = canopen_node_name;
 
     timer_callback_group_ =  base_interface->create_callback_group(
         rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
@@ -38,12 +41,24 @@ IOSubcomponent::IOSubcomponent(
     RCLCPP_INFO(logging_interface->get_logger(), 
             "Creating IO Profile [401] Subcomponenet for %s",
             canopen_node_name.c_str());
+}
 
-    auto timer_callback = [this, logging_interface]() -> void {
-        RCLCPP_INFO(logging_interface->get_logger(), "Hello, world!");
-    };
+void IOSubcomponent::activate()
+{
+    RCLCPP_INFO(logging_interface_->get_logger(), "Activating IO Subcomponnet for %s",
+                canopen_node_name_.c_str());
+    // auto timer_callback = [this]() -> void {
+    //     RCLCPP_INFO(logging_interface_->get_logger(), "Hello, world!");
+    // };
     
-    timer_ = create_wall_timer(2s, timer_callback, timer_callback_group_);
+    // timer_ = create_wall_timer(1s, timer_callback, timer_callback_group_);
+}
+
+void IOSubcomponent::deactivate()
+{
+    RCLCPP_INFO(logging_interface_->get_logger(), "Deactivating IO Subcomponnet for %s",
+                canopen_node_name_.c_str());
+    // timer_->cancel();
 }
 
 } // namespace canopen_chain_node

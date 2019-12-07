@@ -20,6 +20,7 @@ find_package(socketcan_interface REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(canopen_msgs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 
 find_package(Boost REQUIRED
   COMPONENTS
@@ -48,8 +49,9 @@ ament_target_dependencies(canopen_chain_component
   "class_loader"
   "canopen_master"
   "canopen_msgs"
-  "std_srvs"
-  "std_msgs"
+  # "std_srvs"
+  # "std_msgs"
+  "lifecycle_msgs"
   "diagnostic_updater"
   "socketcan_interface"
   "rclcpp"

@@ -33,14 +33,19 @@ public:
         std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> services_interface,
         std::string canopen_node_name,
         std::shared_ptr<canopen::Node> canopen_node);
+
+    void activate();
+    void deactivate();
 private:
     std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface> base_interface_;
     std::shared_ptr<rclcpp::node_interfaces::NodeTimersInterface> timers_interface_;
+    std::shared_ptr<rclcpp::node_interfaces::NodeLoggingInterface> logging_interface_;
     
     std::shared_ptr<rclcpp::callback_group::CallbackGroup> timer_callback_group_;
     rclcpp::TimerBase::SharedPtr timer_;
+    std::string canopen_node_name_;
 
-    // NOTE(sam): create_wall_timer is not available througt timers_interface
+    // NOTE(sam): create_wall_timer is not available through timers_interface
     // for some reason
     template<typename DurationRepT, typename DurationT, typename CallbackT>
     typename rclcpp::WallTimer<CallbackT>::SharedPtr
