@@ -479,11 +479,7 @@ bool CanopenChainComponent::configure_node(std::string node_name)
   loggers_.push_back(logger);
   // CANopen IO profile (401)
   io_profile_subcomponents_.push_back(std::make_shared<IOSubcomponent>(
-    this->get_node_base_interface(),
-    this->get_node_logging_interface(),
-    this->get_node_timers_interface(),
-    this->get_node_topics_interface(),
-    this->get_node_services_interface(),
+    this,
     node_name,
     node->getStorage()
   ));
@@ -530,8 +526,6 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
   {
     io_profile_subcomponent->activate();
   }
-
-  create_publisher
 
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }

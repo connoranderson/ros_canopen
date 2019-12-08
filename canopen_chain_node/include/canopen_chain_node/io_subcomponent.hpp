@@ -18,6 +18,7 @@
 
 #include <canopen_master/canopen.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <canopen_msgs/msg/device_inputs.hpp>
 
 namespace canopen_chain_node
@@ -27,43 +28,18 @@ class IOSubcomponent
 {
 public:
     IOSubcomponent(
-        std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface> base_interface,
-        std::shared_ptr<rclcpp::node_interfaces::NodeLoggingInterface> logging_interface,
-        std::shared_ptr<rclcpp::node_interfaces::NodeTimersInterface> timers_interface,
-        std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface> topics_interface,
-        std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> services_interface,
+        rclcpp_lifecycle::LifecycleNode *parent_component,
         std::string canopen_node_name,
         canopen::ObjectStorageSharedPtr canopen_object_storage);
 
     void activate();
     void deactivate();
 private:
-    std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface> base_interface_;
-    std::shared_ptr<rclcpp::node_interfaces::NodeTimersInterface> timers_interface_;
-    std::shared_ptr<rclcpp::node_interfaces::NodeLoggingInterface> logging_interface_;
-    std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface> topics_interface_;
-    std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> services_interface_;
+    rclcpp_lifecycle::LifecycleNode *parent_component_;
 
-    // NOTE(sam): create_wall_timer is not available through timers_interface
-    // for some reason
-    template<typename DurationRepT, typename DurationT, typename CallbackT>
-    typename rclcpp::WallTimer<CallbackT>::SharedPtr
-    create_wall_timer(
-        std::chrono::duration<DurationRepT, DurationT> period,
-        CallbackT callback,
-        rclcpp::callback_group::CallbackGroup::SharedPtr group)
-    {
-        auto timer = rclcpp::WallTimer<CallbackT>::make_shared(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(period),
-            std::move(callback), this->base_interface_->get_context());
-        timers_interface_->add_timer(timer, group);
-        return timer;
-    }
-
-    std::shared_ptr<rclcpp::callback_group::CallbackGroup> timer_callback_group_;
     rclcpp::TimerBase::SharedPtr timer_;
 
-    rclcpp::Publisher<canopen_msgs::msg::DeviceInputs>::SharedPtr device_inputs_publisher_;
+    std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<canopen_msgs::msg::DeviceInputs>> device_inputs_publisher_;
 
     
     std::string canopen_node_name_;

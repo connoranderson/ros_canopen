@@ -21,28 +21,20 @@ namespace canopen_chain_node
 {
 
 IOSubcomponent::IOSubcomponent(
-    std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface> base_interface,
-    std::shared_ptr<rclcpp::node_interfaces::NodeLoggingInterface> logging_interface,
-    std::shared_ptr<rclcpp::node_interfaces::NodeTimersInterface> timers_interface,
-    std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface> topics_interface,
-    std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> services_interface,
+    rclcpp_lifecycle::LifecycleNode *parent_component,
     std::string canopen_node_name,
     canopen::ObjectStorageSharedPtr canopen_object_storage): 
-    base_interface_(base_interface),
-    logging_interface_(logging_interface),
-    timers_interface_(timers_interface),
-    topics_interface_(topics_interface),
-    services_interface_(services_interface),
+    parent_component_(parent_component),
     canopen_node_name_(canopen_node_name),
     canopen_object_storage_(canopen_object_storage)
 {
-    RCLCPP_INFO(logging_interface_->get_logger(), 
+    RCLCPP_INFO(parent_component_->get_logger(), 
             "Creating IO Profile [401] Subcomponenet for %s",
             canopen_node_name_.c_str());
 
     canopen::ObjectStorage::Entry<uint8_t> number_of_digital_input_bytes;
     canopen_object_storage_->entry(number_of_digital_input_bytes, 0x6000, 0);
-    RCLCPP_INFO(logging_interface_->get_logger(), 
+    RCLCPP_INFO(parent_component_->get_logger(), 
             "Number of digital input bytes %d",
             number_of_digital_input_bytes.get_cached());
 
@@ -52,9 +44,12 @@ IOSubcomponent::IOSubcomponent(
         auto digital_input_byte = std::make_shared<canopen::ObjectStorage::Entry<uint8_t>>();
         canopen_object_storage_->entry(*digital_input_byte.get(), 0x6000, i);
         digital_input_bytes_.push_back(digital_input_byte);
-        RCLCPP_INFO(logging_interface_->get_logger(), 
+        RCLCPP_INFO(parent_component_->get_logger(), 
                 "Adding digital input byte %d", i);
     }
+
+    device_inputs_publisher_ = parent_component_->create_publisher<canopen_msgs::msg::DeviceInputs>(
+        canopen_node_name_ + "/inputs", 10);
 }
 
 void from_byte(uint8_t byte, bool bool_array[8])
@@ -65,13 +60,9 @@ void from_byte(uint8_t byte, bool bool_array[8])
 
 void IOSubcomponent::activate()
 {
+    device_inputs_publisher_->on_activate();
 
-    // device_inputs_publisher_ = topics_interface_->create_publisher<canopen_msgs::msg::DeviceInputs>("/inputs", 10);
-
-    timer_callback_group_ =  base_interface_->create_callback_group(
-        rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
-
-   auto timer_callback = [this]() -> void {
+    auto timer_callback = [this]() -> void {
         auto inputs_msg = canopen_msgs::msg::DeviceInputs();
 
         for (auto const& digital_input_byte: digital_input_bytes_)
@@ -85,13 +76,14 @@ void IOSubcomponent::activate()
 
         device_inputs_publisher_->publish(inputs_msg);
     };
-    
-    timer_ = create_wall_timer(1s, timer_callback, timer_callback_group_);
+
+    timer_ = parent_component_->create_wall_timer(1s, timer_callback);
 }
 
 void IOSubcomponent::deactivate()
 {
-    RCLCPP_INFO(logging_interface_->get_logger(), "Deactivating IO Subcomponnet for %s",
+    device_inputs_publisher_->on_deactivate();
+    RCLCPP_INFO(parent_component_->get_logger(), "Deactivating IO Subcomponnet for %s",
                 canopen_node_name_.c_str());
     timer_->cancel();
 }
