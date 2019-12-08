@@ -1,0 +1,6 @@
+string node
+uint8 ouput_id
+bool output_on
+---
+bool success
+string message

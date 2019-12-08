@@ -86,7 +86,7 @@ class Rosout extends React.Component {
         const { classes } = this.props;
         const rosoutListItems = []
 
-        this.state.rosoutMsgs.forEach(rosout_entry => {
+        this.state.rosoutMsgs.reverse().forEach(rosout_entry => {
             const stamp = rosout_entry.getIn(['stamp', 'sec']) + rosout_entry.getIn(['stamp', 'nanosec']);
             const level = rosout_entry.get('level');
 

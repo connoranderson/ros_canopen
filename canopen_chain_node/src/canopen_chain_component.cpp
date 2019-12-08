@@ -485,7 +485,7 @@ bool CanopenChainComponent::configure_node(std::string node_name)
     this->get_node_topics_interface(),
     this->get_node_services_interface(),
     node_name,
-    node
+    node->getStorage()
   ));
 
   return true;
@@ -530,6 +530,8 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
   {
     io_profile_subcomponent->activate();
   }
+
+  create_publisher
 
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }

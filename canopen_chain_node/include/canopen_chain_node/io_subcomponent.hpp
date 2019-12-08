@@ -18,6 +18,7 @@
 
 #include <canopen_master/canopen.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <canopen_msgs/msg/device_inputs.hpp>
 
 namespace canopen_chain_node
 {
@@ -32,7 +33,7 @@ public:
         std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface> topics_interface,
         std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> services_interface,
         std::string canopen_node_name,
-        std::shared_ptr<canopen::Node> canopen_node);
+        canopen::ObjectStorageSharedPtr canopen_object_storage);
 
     void activate();
     void deactivate();
@@ -40,10 +41,8 @@ private:
     std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface> base_interface_;
     std::shared_ptr<rclcpp::node_interfaces::NodeTimersInterface> timers_interface_;
     std::shared_ptr<rclcpp::node_interfaces::NodeLoggingInterface> logging_interface_;
-    
-    std::shared_ptr<rclcpp::callback_group::CallbackGroup> timer_callback_group_;
-    rclcpp::TimerBase::SharedPtr timer_;
-    std::string canopen_node_name_;
+    std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface> topics_interface_;
+    std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> services_interface_;
 
     // NOTE(sam): create_wall_timer is not available through timers_interface
     // for some reason
@@ -60,6 +59,17 @@ private:
         timers_interface_->add_timer(timer, group);
         return timer;
     }
+
+    std::shared_ptr<rclcpp::callback_group::CallbackGroup> timer_callback_group_;
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    rclcpp::Publisher<canopen_msgs::msg::DeviceInputs>::SharedPtr device_inputs_publisher_;
+
+    
+    std::string canopen_node_name_;
+    canopen::ObjectStorageSharedPtr canopen_object_storage_;
+
+    std::vector<std::shared_ptr<canopen::ObjectStorage::Entry<uint8_t>>> digital_input_bytes_;
 
 };
 

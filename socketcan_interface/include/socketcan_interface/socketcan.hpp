@@ -262,8 +262,8 @@ protected:
         input_.is_error = 1;
 
         ROSCANOPEN_ERROR("socketcan_interface", "error: " << input_.id);
-        // setInternalError(input_.id);
-        // setNotReady();
+        setInternalError(input_.id);
+        setNotReady();
       } else {
         input_.is_extended = (frame_.can_id & CAN_EFF_FLAG) ? 1 : 0;
         input_.id = frame_.can_id & (input_.is_extended ? CAN_EFF_MASK : CAN_SFF_MASK);
