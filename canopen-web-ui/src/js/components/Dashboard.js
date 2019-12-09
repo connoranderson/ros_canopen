@@ -24,6 +24,7 @@ import Rosout from './Rosout';
 import Rosparams from './Rosparams';
 import CanopenObjectDictionary from './CanopenObjectDictionary';
 import RuntimeMonitor from './RuntimeMonitor';
+import CanopenInputs from './CanopenInputs';
 
 function Copyright() {
   return (
@@ -183,6 +184,12 @@ export default function Dashboard() {
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightHalfPaper}>
                 <Lifecycle />
+              </Paper>
+            </Grid>
+            {/* CANopen Inputs*/}
+            <Grid item xs={12} md={4} lg={3}>
+              <Paper className={fixedHeightHalfPaper}>
+                <CanopenInputs />
               </Paper>
             </Grid>
             {/*  CANopen Object Dictionary */}

@@ -151,6 +151,21 @@ class CommonActions {
             this.callGetAvailableLifecycleTransitionsService();
             this.callGetLifecycleStateService();
         });
+
+        this.canopenInputs = new RosLib.Topic({
+            ros: this.rosClient,
+            name: '/node_1/inputs',
+            messageType: 'canopen_msgs/msg/DeviceInputs'
+        });
+
+        this.canopenInputs.subscribe(message => {
+            dispatcher.dispatch({
+                type: 'CANOPEN_INPUTS',
+                node_name: 'node_1',
+                digital_input_names: message.digital_input_names,
+                digital_inputs: message.digital_inputs
+            });
+        });
     }
 
     refreshState = () => {

@@ -40,10 +40,11 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
 
     std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<canopen_msgs::msg::DeviceInputs>> device_inputs_publisher_;
-
     
     std::string canopen_node_name_;
     canopen::ObjectStorageSharedPtr canopen_object_storage_;
+
+    std::vector<std::string> digital_input_names_;
 
     std::vector<std::shared_ptr<canopen::ObjectStorage::Entry<uint8_t>>> digital_input_bytes_;
 

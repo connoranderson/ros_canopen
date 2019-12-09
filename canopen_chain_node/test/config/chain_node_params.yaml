@@ -30,6 +30,8 @@ canopen_chain:
       eds_pkg: 'canopen_chain_node' # optional package  name for relative path
       # eds_file: 'test/config/ISD860.dcf' # path to EDS/DCF file
       # publish: ["obj:6040", "obj:6041", "obj:6061!", "obj:6064"] # list of objects to be published (one topic per node)
+      io:
+        digital_input_names: ['joystick_down', 'joystick_right', 'joystick_up', 'joystick_left']
 
     node_2:
       id: 8

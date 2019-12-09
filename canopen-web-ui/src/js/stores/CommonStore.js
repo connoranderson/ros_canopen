@@ -184,6 +184,17 @@ class CommonStore extends EventEmitter {
                     this.emit('change');
                     break;
                 }
+            case 'CANOPEN_INPUTS':
+                {
+                    const inputs = {
+                        digitalInputNames: action.digital_input_names,
+                        digitalInputs: action.digital_inputs
+                    };
+
+                    this.state = this.state.setIn(['canopenInputs', action.node_name, ], Immutable.fromJS(inputs));
+                    this.emit('change');
+                    break;
+                }
             default:
                 console.log(`action.type '${action.type}' not recognized!`);
         }
@@ -195,8 +206,9 @@ CommonStore.defaultState = {
     lifecycleState: 'not available',
     rosoutMsgs: [],
     rosParams: [],
-    canopenObjectDictionaries: {},
     diagnosticItems: {},
+    canopenObjectDictionaries: {},
+    canopenInputs: {}
 }
 
 const commonStore = new CommonStore();

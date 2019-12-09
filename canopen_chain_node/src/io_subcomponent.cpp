@@ -48,6 +48,24 @@ IOSubcomponent::IOSubcomponent(
                 "Adding digital input byte %d", i);
     }
 
+    std::vector<std::string> digital_input_names;
+    if (!parent_component_->get_parameter(canopen_node_name_ + ".io.digital_input_names", digital_input_names)) {
+        parent_component_->declare_parameter(canopen_node_name_ + ".io.digital_input_names", rclcpp::ParameterValue(digital_input_names));
+        parent_component_->get_parameter(canopen_node_name_ + ".io.digital_input_names", digital_input_names);
+    }
+
+    digital_input_names_.clear();
+
+    for (auto const& digital_input_name: digital_input_names)
+    {
+        digital_input_names_.push_back(digital_input_name);
+    }
+
+    while (digital_input_names_.size() < digital_input_bytes_.size() * 8)
+    {
+        digital_input_names_.push_back("");
+    }
+
     device_inputs_publisher_ = parent_component_->create_publisher<canopen_msgs::msg::DeviceInputs>(
         canopen_node_name_ + "/inputs", 10);
 }
@@ -64,6 +82,7 @@ void IOSubcomponent::activate()
 
     auto timer_callback = [this]() -> void {
         auto inputs_msg = canopen_msgs::msg::DeviceInputs();
+        inputs_msg.digital_input_names = digital_input_names_;
 
         for (auto const& digital_input_byte: digital_input_bytes_)
         {
