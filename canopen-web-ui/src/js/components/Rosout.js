@@ -14,6 +14,7 @@ import ClearAll from '@material-ui/icons/ClearAll';
 import Grid from '@material-ui/core/Grid';
 import IconButton from "@material-ui/core/IconButton";
 import CommonActions from '../actions/CommonActions';
+import orange from "@material-ui/core/colors/orange";
 
 const styles = theme => ({
     ul: {
@@ -93,7 +94,7 @@ class Rosout extends React.Component {
             let icon;
             icon = <InfoIcon color='primary' />;
             if (level === 30) {
-                icon = <WarningIcon color='secondary' />;
+                icon = <WarningIcon style={{color: orange.A200}} />;
             } else if (level === 40) {
                 icon = <ErrorIcon color='error' />;
             }

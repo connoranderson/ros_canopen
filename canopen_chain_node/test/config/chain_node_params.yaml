@@ -32,6 +32,7 @@ canopen_chain:
       # publish: ["obj:6040", "obj:6041", "obj:6061!", "obj:6064"] # list of objects to be published (one topic per node)
       io:
         digital_input_names: ['joystick_down', 'joystick_right', 'joystick_up', 'joystick_left']
+        digital_output_names: ['everyting_is_fine_lamp', '', '', '', '', '', '', '', '', '', '', '', '', '', '','', 'relay_0', 'relay_1', 'relay_2', 'reset_emcy_stop']
 
     node_2:
       id: 8

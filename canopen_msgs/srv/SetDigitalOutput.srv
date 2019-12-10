@@ -1,5 +1,4 @@
-string node
-int16 ouput_index
+int16 output_index
 string output_name
 bool output_on
 ---

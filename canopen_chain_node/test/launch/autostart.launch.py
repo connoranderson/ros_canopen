@@ -20,6 +20,7 @@ from ament_index_python import get_package_share_directory
 
 import launch
 from launch.actions import EmitEvent
+from launch.actions.execute_process import ExecuteProcess
 
 import launch_ros
 from launch_ros.actions import LifecycleNode
@@ -34,8 +35,6 @@ def generate_launch_description():
         'test/config/chain_node_params.yaml'
     )
 
-    ld = launch.LaunchDescription()
-
     chain_node = LifecycleNode(
         node_name='canopen_chain',
         package='canopen_chain_node',
@@ -45,6 +44,12 @@ def generate_launch_description():
             test_params
         ]
     )
+
+    ros2_web_bridge = ExecuteProcess(
+        cmd=['node', '/opt/ros2-web-bridge/bin/rosbridge.js'],
+        output='screen'
+    )
+
 
     # Make the node take the 'configure' transition.
     emit_event_request_that_chain_node_does_configure_transition = EmitEvent(
@@ -66,10 +71,12 @@ def generate_launch_description():
         ],
       )
     )
-
+    
+    ld = launch.LaunchDescription()
     # Register nodes and event handlers before starting 'configure' transition
     ld.add_action(register_event_handler_for_chain_node_reaches_inactive_state)
     ld.add_action(chain_node)
+    ld.add_action(ros2_web_bridge)
     ld.add_action(emit_event_request_that_chain_node_does_configure_transition)
 
     return ld

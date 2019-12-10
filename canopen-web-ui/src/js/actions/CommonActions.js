@@ -112,6 +112,12 @@ class CommonActions {
             name: '/set_object',
             serviceType: 'canopen_msgs/srv/SetObject'
         });
+
+        this.canopenSetDigitalOutputService = new RosLib.Service({
+            ros: this.rosClient,
+            name: '/set_digital_output',
+            serviceType: 'canopen_msgs/srv/SetDigitalOutput'
+        });
     }
 
     createSubscriptions = () => {
@@ -164,6 +170,21 @@ class CommonActions {
                 node_name: 'node_1',
                 digital_input_names: message.digital_input_names,
                 digital_inputs: message.digital_inputs
+            });
+        });
+
+        this.canopenOutputs = new RosLib.Topic({
+            ros: this.rosClient,
+            name: '/node_1/outputs',
+            messageType: 'canopen_msgs/msg/DeviceOutputs'
+        });
+
+        this.canopenOutputs.subscribe(message => {
+            dispatcher.dispatch({
+                type: 'CANOPEN_OUTPUTS',
+                node_name: 'node_1',
+                digital_output_names: message.digital_output_names,
+                digital_outputs: message.digital_outputs
             });
         });
     }
@@ -291,6 +312,28 @@ class CommonActions {
             } else {
                 alert("Failed to set canopen object: " + response.message);
             }
+        });
+    }
+
+    setDigitalCanopenOutput = (node, output_index, output_name, output_on) => {
+        const request = new RosLib.ServiceRequest({
+            output_index,
+            output_name,
+            output_on
+        });
+        this.canopenSetDigitalOutputService.callService(request, response => {
+        });
+    }
+
+    testCall = () => {
+        console.log('request');
+        const request = new RosLib.ServiceRequest({
+            output_index: 100,
+            output_name: '',
+            output_on: true
+        });
+        this.canopenSetDigitalOutputService.callService(request, response => {
+            console.log('response');
         });
     }
 

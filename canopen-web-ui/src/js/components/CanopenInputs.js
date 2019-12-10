@@ -8,7 +8,6 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
 import CommonStore from '../stores/CommonStore';
-import { node } from 'prop-types';
 
 const styles = theme => ({
 
@@ -42,22 +41,17 @@ class CanopenInputs extends React.Component {
         const nodeInputs = this.state.canopenInputs.get(canopenNode);
         const digitalInputRows = [];
         if (typeof nodeInputs !== 'undefined') {
-            // console.log(nodeInputs)
             nodeInputs.get('digitalInputNames').forEach((inputName, index) => {
                 digitalInputRows.push(
                     <TableRow>
                         <TableCell>{inputName}</TableCell>
                         <TableCell align="right">Digital Input</TableCell>
-                        <TableCell align="right">{"D" + index.toString()}</TableCell>
+                        <TableCell align="right">{"DI" + index.toString()}</TableCell>
                         <TableCell align="right">{nodeInputs.getIn(['digitalInputs', index]).toString()}</TableCell>
                     </TableRow>
                 )
             });
         }
-
-        // nodeDigitalInputs.forEach(element => {
-        //    console.log(element);
-        // });
 
         return (
             <React.Fragment>

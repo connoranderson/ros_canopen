@@ -25,6 +25,7 @@ import Rosparams from './Rosparams';
 import CanopenObjectDictionary from './CanopenObjectDictionary';
 import RuntimeMonitor from './RuntimeMonitor';
 import CanopenInputs from './CanopenInputs';
+import CanopenOutputs from './CanopenOutputs';
 
 function Copyright() {
   return (
@@ -180,34 +181,40 @@ export default function Dashboard() {
         <div className={classes.appBarSpacer} />
         <Container maxWidth="lg" className={classes.container}>
           <Grid container spacing={3}>
+            {/* CANopen Outputs */}
+            <Grid item xs={12}>
+              <Paper className={fixedHeightPaper}>
+                <CanopenOutputs />
+              </Paper>
+            </Grid>
             {/* Lifecycle */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightHalfPaper}>
                 <Lifecycle />
               </Paper>
             </Grid>
-            {/* CANopen Inputs*/}
-            <Grid item xs={12} md={4} lg={3}>
-              <Paper className={fixedHeightHalfPaper}>
-                <CanopenInputs />
-              </Paper>
-            </Grid>
-            {/*  CANopen Object Dictionary */}
+            {/*  Runtime Monitor */}
             <Grid item xs={12}>
               <Paper className={classes.paper}>
                 <RuntimeMonitor />
-              </Paper>
-            </Grid>
-            {/*  CANopen Object Dictionary */}
-            <Grid item xs={12}>
-              <Paper className={classes.paper}>
-                <CanopenObjectDictionary />
               </Paper>
             </Grid>
             {/* ROS Console */}
             <Grid item xs={12} md={8} lg={9}>
               <Paper className={fixedHeightPaper}>
                 <Rosout/>
+              </Paper>
+            </Grid>
+            {/* CANopen Inputs */}
+            <Grid item xs={12}>
+              <Paper className={fixedHeightPaper}>
+                <CanopenInputs />
+              </Paper>
+            </Grid>
+            {/*  CANopen Object Dictionary */}
+            <Grid item xs={12}>
+              <Paper className={classes.paper}>
+                <CanopenObjectDictionary />
               </Paper>
             </Grid>
             {/*  Rosparams */}
