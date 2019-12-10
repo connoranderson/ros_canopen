@@ -80,6 +80,9 @@ private:
 
   bool use_sync_;
 
+  bool use_heartbeat_;
+  float heartbeat_rate_;
+
   canopen::MasterSharedPtr master_;
   canopen::SyncLayerSharedPtr sync_;
   can::DriverInterfaceSharedPtr interface_;
@@ -92,6 +95,7 @@ private:
   std::vector<std::shared_ptr<IOSubcomponent>> io_profile_subcomponents_;
 
   rclcpp::TimerBase::SharedPtr update_periodic_timer_;
+  rclcpp::TimerBase::SharedPtr heartbeat_timer_;
 
   rclcpp::Service<canopen_msgs::srv::ListObjectDictionaries>::SharedPtr srv_list_object_dictionaries_;
   rclcpp::Service<canopen_msgs::srv::GetObject>::SharedPtr srv_get_object_;
@@ -119,6 +123,17 @@ private:
   void handle_set_object(
       const std::shared_ptr<canopen_msgs::srv::SetObject::Request> request,
       std::shared_ptr<canopen_msgs::srv::SetObject::Response> response);
+
+  struct HeartbeatSender
+  {
+    can::Frame frame;
+    can::DriverInterfaceSharedPtr interface;
+    bool send()
+    {
+      return interface && interface->send(frame);
+    }
+  } heartbeat_sender_;
+
   };
  
 }  // namespace canopen_chain_node

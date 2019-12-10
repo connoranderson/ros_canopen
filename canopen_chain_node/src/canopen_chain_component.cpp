@@ -60,6 +60,7 @@ CanopenChainComponent::CanopenChainComponent()
   // heartbeat
   declare_parameter("heartbeat.msg", rclcpp::ParameterValue("704#05"));
   declare_parameter("heartbeat.rate", rclcpp::ParameterValue(0.0));
+  declare_parameter("heartbeat.use_heartbeat", rclcpp::ParameterValue(false));
 
   // defaults
   declare_parameter("defaults.eds_pkg", rclcpp::ParameterValue("canopen_chain_node"));
@@ -340,13 +341,18 @@ bool CanopenChainComponent::configure_heartbeat()
 {
   RCLCPP_INFO(this->get_logger(), "Configuring heartbeat");
 
-  std::string msg;
-  get_parameter("heartbeat.msg", msg);
-  RCLCPP_INFO(this->get_logger(), "heartbeat.msg: %s", msg.c_str());
+  get_parameter("heartbeat.use_heartbeat", use_heartbeat_);
+  RCLCPP_INFO(this->get_logger(), "heartbeat.use_heartbeat: %d", use_heartbeat_);
 
-  float rate = 0.0;
-  get_parameter("heartbeat.rate", rate);
-  RCLCPP_INFO(this->get_logger(), "heartbeat.rate: %f", rate);
+  std::string heartbeat_msg;
+  get_parameter("heartbeat.msg", heartbeat_msg);
+  RCLCPP_INFO(this->get_logger(), "heartbeat.msg: %s", heartbeat_msg.c_str());
+
+  get_parameter("heartbeat.rate", heartbeat_rate_);
+  RCLCPP_INFO(this->get_logger(), "heartbeat.rate: %f", heartbeat_rate_);
+
+  heartbeat_sender_.frame = can::toframe(heartbeat_msg);
+  heartbeat_sender_.interface = interface_;
 
   return true;
 }
@@ -533,6 +539,12 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
   update_periodic_timer_ = create_wall_timer(
     std::chrono::milliseconds(update_period_ms_), std::bind(&CanopenChainComponent::update_callback, this));
 
+  if (use_heartbeat_)
+  {
+    heartbeat_timer_ = create_wall_timer(
+      std::chrono::milliseconds(int(1000.0 / heartbeat_rate_)), std::bind(&HeartbeatSender::send, &heartbeat_sender_));
+  }
+
   std::flush(std::cout);
   if (getLayerState() == Off) {
     RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available? Is device power on?");
@@ -586,6 +598,7 @@ CanopenChainComponent::on_deactivate(const rclcpp_lifecycle::State &)
   }
 
   update_periodic_timer_->cancel();
+  heartbeat_timer_->cancel();
 
   for(auto const& io_profile_subcomponent: io_profile_subcomponents_)
   {
