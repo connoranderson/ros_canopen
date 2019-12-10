@@ -3,6 +3,8 @@ canopen_chain:
 
     # reset_errors_before_recover: true
 
+    update_ms: 10 # update interval of control loop, also controls sync interval if used
+
     bus:
       device: 'can0' # socketcan network
       loopback: false # socket should loop back messages
@@ -10,9 +12,9 @@ canopen_chain:
       master_allocator: 'canopen_master/SimpleMasterAllocator'
 
     sync:
+      use_sync: false
       overflow: 10 # overflow sync counter at value or do not set it (0, default)
-      interval_ms: 0 # set to 0 to disable sync
-      update_ms: 10 # update interval of control loop, must be set explecitly if sync is disabled
+      interval_ms: 10 # update interval when using sync
 
     # heartbeat:
     #   msg: "704#05" # message to send, cansend format: heartbeat of node 704 with status 5=Started

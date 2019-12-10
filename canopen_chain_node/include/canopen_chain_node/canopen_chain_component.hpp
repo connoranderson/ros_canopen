@@ -78,6 +78,8 @@ private:
   std::string default_eds_pkg_;
   std::string default_eds_file_;
 
+  bool use_sync_;
+
   canopen::MasterSharedPtr master_;
   canopen::SyncLayerSharedPtr sync_;
   can::DriverInterfaceSharedPtr interface_;

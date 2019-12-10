@@ -1289,14 +1289,6 @@ DataType=0x0005
 AccessType=ro
 PDOMapping=0x1
 
-;[6005]
-;ParameterName=Global Interrupt Enable Digital 8-Bit
-;ObjectType=7
-;;DataType=5
-;DataType=1
-;AccessType=rw
-;DefaultValue=1
-;PDOMapping=0
 
 [6006]
 SubNumber=0x5
@@ -1687,14 +1679,6 @@ DataType=0x0007
 AccessType=ro
 DefaultValue=0x0
 PDOMapping=0x0
-
-;[6423]
-;ParameterName=Analogue Input Global Interrupt Enable
-;ObjectType=0x7
-;DataType=0x1
-;AccessType=rw
-;DefaultValue=0
-;PDOMapping=0x0
 
 [6424]
 SubNumber=0x5

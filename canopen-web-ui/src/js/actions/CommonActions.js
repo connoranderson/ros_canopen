@@ -325,18 +325,6 @@ class CommonActions {
         });
     }
 
-    testCall = () => {
-        console.log('request');
-        const request = new RosLib.ServiceRequest({
-            output_index: 100,
-            output_name: '',
-            output_on: true
-        });
-        this.canopenSetDigitalOutputService.callService(request, response => {
-            console.log('response');
-        });
-    }
-
     updateRosParameter = (newData, oldData) => {
         // TODO(sam): share these between action and store
         // const PARAMETER_NOT_SET = 0

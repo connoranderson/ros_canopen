@@ -6,7 +6,6 @@ import FormControl from '@material-ui/core/FormControl';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
-import Button from '@material-ui/core/Button';
 
 import CommonStore from '../stores/CommonStore';
 import commonActions from '../actions/CommonActions';
@@ -63,7 +62,6 @@ class CanopenOutputs extends React.Component {
         return (
             <React.Fragment>
                 <Title>CANopen Outputs</Title>
-                <Button onClick={() => commonActions.testCall()}>Call</Button>
                 <FormControl component="fieldset">
                     <FormLabel component="legend">Digital outputs</FormLabel>
                     <FormGroup>

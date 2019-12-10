@@ -41,6 +41,9 @@ CanopenChainComponent::CanopenChainComponent()
   diagnostic_updater_.setHardwareID(hardware_id);
   diagnostic_updater_.add("canopen main", this, &CanopenChainComponent::report_diagnostics);
 
+  // common
+  declare_parameter("update_ms", rclcpp::ParameterValue(10));
+
   // bus
   declare_parameter("bus.device", rclcpp::ParameterValue("can0"));
   declare_parameter("bus.loopback", rclcpp::ParameterValue("false"));
@@ -52,7 +55,7 @@ CanopenChainComponent::CanopenChainComponent()
   // sync
   declare_parameter("sync.overflow", rclcpp::ParameterValue(10));
   declare_parameter("sync.interval_ms", rclcpp::ParameterValue(0));
-  declare_parameter("sync.update_ms", rclcpp::ParameterValue(10));
+  declare_parameter("sync.use_sync", rclcpp::ParameterValue(false));
 
   // heartbeat
   declare_parameter("heartbeat.msg", rclcpp::ParameterValue("704#05"));
@@ -112,6 +115,12 @@ CanopenChainComponent::on_configure(const rclcpp_lifecycle::State &)
     "set_object",
     std::bind(&CanopenChainComponent::handle_set_object, this, 
     std::placeholders::_1, std::placeholders::_2));
+
+  int update_ms;
+  get_parameter("update_ms", update_ms);
+  RCLCPP_INFO(this->get_logger(), "update_ms: %d", update_ms);
+
+  update_period_ms_ = update_ms; 
 
   if (configure_bus() && configure_sync() && configure_heartbeat() && 
       configure_defaults() && configure_nodes())
@@ -308,19 +317,21 @@ bool CanopenChainComponent::configure_sync()
   get_parameter("sync.interval_ms", sync_interval_ms);
   RCLCPP_INFO(this->get_logger(), "sync.interval_ms: %d", sync_interval_ms);
 
-  int update_ms;
-  get_parameter("sync.update_ms", update_ms);
-  RCLCPP_INFO(this->get_logger(), "sync.update_ms: %d", update_ms);
+  get_parameter("sync.use_sync", use_sync_);
+  RCLCPP_INFO(this->get_logger(), "use_sync: %d", use_sync_);
 
-  update_period_ms_ = update_ms; 
+  if (use_sync_) 
+  {
+    sync_ = master_->getSync(
+      canopen::SyncProperties(can::MsgHeader(0x80), sync_interval_ms, sync_overflow));
 
-  // sync_ = master_->getSync(
-  //   canopen::SyncProperties(can::MsgHeader(0x80), sync_interval_ms, sync_overflow));
+    if (!sync_ && sync_interval_ms) {
+      RCLCPP_ERROR(this->get_logger(), "Initializing sync master failed");
+      return false;
+    }
 
-  // if (!sync_ && sync_interval_ms) {
-  //   RCLCPP_ERROR(this->get_logger(), "Initializing sync master failed");
-  //   return false;
-  // }
+    add(sync_);
+  }
 
   return true;
 }
@@ -460,10 +471,16 @@ bool CanopenChainComponent::configure_node(std::string node_name)
     return false;
   }
 
-  // TODO(sam): Use sync argument when creating node
-  canopen::NodeSharedPtr node =
-    std::make_shared<canopen::Node>(interface_, canopen_object_dictionary, 
-                                    node_id);
+  canopen::NodeSharedPtr node;
+  if (use_sync_)
+  {
+    node = std::make_shared<canopen::Node>(interface_, canopen_object_dictionary, 
+                                           node_id, sync_);
+  } else
+  {
+    node = std::make_shared<canopen::Node>(interface_, canopen_object_dictionary, 
+                                           node_id);
+  }
 
   LoggerSharedPtr logger = std::make_shared<Logger>(node);
   diagnostic_updater_.add(node_name,

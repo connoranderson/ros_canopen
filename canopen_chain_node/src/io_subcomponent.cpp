@@ -43,9 +43,6 @@ void IOSubcomponent::configure_digital_outputs()
 {
     canopen::ObjectStorage::Entry<uint8_t> number_of_digital_output_bytes;
     canopen_object_storage_->entry(number_of_digital_output_bytes, 0x6200, 0);
-    RCLCPP_INFO(parent_component_->get_logger(), 
-            "Number of digital output bytes %d",
-            number_of_digital_output_bytes.get_cached());
 
     digital_output_bytes_.clear();
     for(int i=1; i <= number_of_digital_output_bytes.get_cached(); i++)
@@ -53,8 +50,6 @@ void IOSubcomponent::configure_digital_outputs()
         auto digital_output_byte = std::make_shared<canopen::ObjectStorage::Entry<uint8_t>>();
         canopen_object_storage_->entry(*digital_output_byte.get(), 0x6200, i);
         digital_output_bytes_.push_back(digital_output_byte);
-        RCLCPP_INFO(parent_component_->get_logger(), 
-                "Adding digital output byte %d", i);
     }
 
     std::vector<std::string> digital_output_names;
@@ -245,7 +240,9 @@ void IOSubcomponent::publish_digital_outputs()
     for (auto const& digital_output_byte: digital_output_bytes_)
     {
         bool bool_array[8];
-        from_byte(digital_output_byte->get(), bool_array);
+        // NOTE(sam): initializing seems to set all outputs to 0,
+        // so the cache should always be in sync when connected?
+        from_byte(digital_output_byte->get_cached(), bool_array);
         for (auto const& output_state: bool_array) {
             outputs_msg.digital_outputs.push_back(output_state);
         }
