@@ -181,12 +181,6 @@ export default function Dashboard() {
         <div className={classes.appBarSpacer} />
         <Container maxWidth="lg" className={classes.container}>
           <Grid container spacing={3}>
-            {/* CANopen Outputs */}
-            <Grid item xs={12}>
-              <Paper className={fixedHeightPaper}>
-                <CanopenOutputs />
-              </Paper>
-            </Grid>
             {/* Lifecycle */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightHalfPaper}>
@@ -203,6 +197,12 @@ export default function Dashboard() {
             <Grid item xs={12} md={8} lg={9}>
               <Paper className={fixedHeightPaper}>
                 <Rosout/>
+              </Paper>
+            </Grid>
+            {/* CANopen Outputs */}
+            <Grid item xs={12}>
+              <Paper className={fixedHeightPaper}>
+                <CanopenOutputs />
               </Paper>
             </Grid>
             {/* CANopen Inputs */}

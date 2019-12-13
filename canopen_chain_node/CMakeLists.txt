@@ -49,7 +49,7 @@ ament_target_dependencies(canopen_chain_component
   "class_loader"
   "canopen_master"
   "canopen_msgs"
-  # "std_srvs"
+  "std_srvs"
   # "std_msgs"
   "lifecycle_msgs"
   "diagnostic_updater"

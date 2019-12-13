@@ -96,7 +96,7 @@ class Rosparams extends React.Component {
     let canopenDictionaryEntries = [];
     if (this.state.canopenObjectDictionaries.get(selectedNode))
     {
-      canopenDictionaryEntries = this.state.canopenObjectDictionaries.get('node_1').toJS()
+      canopenDictionaryEntries = this.state.canopenObjectDictionaries.get(selectedNode).toJS()
     }
 
     const data_type_names = [

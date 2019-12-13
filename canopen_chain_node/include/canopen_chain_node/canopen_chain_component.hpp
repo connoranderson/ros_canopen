@@ -28,6 +28,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <socketcan_interface/interface.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <pluginlib/class_loader.hpp>
 
 #include "canopen_chain_helpers.hpp"
@@ -97,6 +98,7 @@ private:
   rclcpp::TimerBase::SharedPtr update_periodic_timer_;
   rclcpp::TimerBase::SharedPtr heartbeat_timer_;
 
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_recover_;
   rclcpp::Service<canopen_msgs::srv::ListObjectDictionaries>::SharedPtr srv_list_object_dictionaries_;
   rclcpp::Service<canopen_msgs::srv::GetObject>::SharedPtr srv_get_object_;
   rclcpp::Service<canopen_msgs::srv::SetObject>::SharedPtr srv_set_object_;
@@ -123,6 +125,10 @@ private:
   void handle_set_object(
       const std::shared_ptr<canopen_msgs::srv::SetObject::Request> request,
       std::shared_ptr<canopen_msgs::srv::SetObject::Response> response);
+
+  void handle_recover(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   struct HeartbeatSender
   {

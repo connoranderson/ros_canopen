@@ -73,6 +73,27 @@ CanopenChainComponent::CanopenChainComponent()
   std::flush(std::cout);
 }
 
+void CanopenChainComponent::handle_recover(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response) 
+{
+  RCLCPP_INFO(this->get_logger(), "Attempting to recover canopen nodes");
+
+  // NOTE(sam): does not seem to do anything... at least, does not remove 
+  // node errors from diagnostics
+
+  // Attempt to recover all nodes
+  for (auto const& canopen_node_entry: nodes_lookup_)
+  {
+    canopen::LayerStatus layer_status;
+    canopen_node_entry.second->recover(layer_status);
+  }
+
+  canopen::LayerReport status;
+  recover(status);
+  diag(status);
+}
+
 void CanopenChainComponent::report_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat)
 {
   // TODO(sam): add mutex
@@ -101,6 +122,10 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CanopenChainComponent::on_configure(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(this->get_logger(), "Configuring canopen_chain");
+
+  srv_recover_ = create_service<std_srvs::srv::Trigger>(
+        "recover", std::bind(&CanopenChainComponent::handle_recover, this,
+                            std::placeholders::_1, std::placeholders::_2));
 
   srv_list_object_dictionaries_ = create_service<canopen_msgs::srv::ListObjectDictionaries>(
     "list_object_dictionaries",
@@ -423,6 +448,13 @@ bool CanopenChainComponent::configure_node(std::string node_name)
   }
   RCLCPP_INFO(this->get_logger(), "%s eds_pkg: %s", node_name.c_str(), eds_pkg.c_str());
 
+  std::vector<std::string> canopen_profiles;
+  if (!get_parameter(node_name + ".profiles", canopen_profiles))
+  {
+    declare_parameter(node_name + ".profiles");
+    get_parameter(node_name + ".profiles", canopen_profiles);
+  }
+
   // Find and parse Electronic Data Sheet (EDS)
   std::string eds_pkg_share_directory = "";
   std::string eds_full_path = eds_file;
@@ -500,12 +532,16 @@ bool CanopenChainComponent::configure_node(std::string node_name)
   logger->add(emcy);
 
   loggers_.push_back(logger);
-  // CANopen IO profile (401)
-  io_profile_subcomponents_.push_back(std::make_shared<IOSubcomponent>(
-    this,
-    node_name,
-    node->getStorage()
-  ));
+
+  if (std::find(canopen_profiles.begin(), canopen_profiles.end(), "io") != canopen_profiles.end())
+  {
+    // CANopen IO profile (401)
+    io_profile_subcomponents_.push_back(std::make_shared<IOSubcomponent>(
+      this,
+      node_name,
+      node->getStorage()
+    ));
+  }
 
   return true;
 }
@@ -531,9 +567,14 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
     status.error("Unknown exception while initializng CAN Layers");
   }
 
-  RCLCPP_INFO(this->get_logger(), "CAN init has finished!");
+  std::flush(std::cout);
+  if (getLayerState() == Off) {
+    RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available? Is device power on?");
+    this->Layer::shutdown(status);
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
+  }
 
-  //shutdown(status);
+  RCLCPP_INFO(this->get_logger(), "CAN init has finished!");
 
   // TODO(sam): Make optional implementation using a dedicated thread and "sleep_until". Don't use boost?
   update_periodic_timer_ = create_wall_timer(
@@ -543,12 +584,6 @@ CanopenChainComponent::on_activate(const rclcpp_lifecycle::State &)
   {
     heartbeat_timer_ = create_wall_timer(
       std::chrono::milliseconds(int(1000.0 / heartbeat_rate_)), std::bind(&HeartbeatSender::send, &heartbeat_sender_));
-  }
-
-  std::flush(std::cout);
-  if (getLayerState() == Off) {
-    RCLCPP_ERROR(this->get_logger(), "Could not initialize main CAN Layer! Is the CAN network available? Is device power on?");
-    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
   }
 
   for(auto const& io_profile_subcomponent: io_profile_subcomponents_)
@@ -571,14 +606,13 @@ void CanopenChainComponent::update_callback()
       // NOTE(sam): node starts printing sdo, no response messages
       // and becomes unresponsive to callbacks if one node is shut off
       // just deactivate on warnings for now...
-      trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
+      // trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
     } else if (!layer_status.bounded<canopen::LayerStatus::Ok>()) {
       RCLCPP_WARN_ONCE(this->get_logger(), layer_status.reason());
     }
   } catch (const canopen::Exception &e) {
     RCLCPP_ERROR(this->get_logger(), boost::diagnostic_information(e));
-  }
-}
+  }}
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CanopenChainComponent::on_deactivate(const rclcpp_lifecycle::State &)
