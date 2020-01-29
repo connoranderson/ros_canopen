@@ -87,12 +87,19 @@ ament_target_dependencies(${PROJECT_NAME}_node
 
 install(
   TARGETS
-    ${PROJECT_NAME}_node
     socketcan_to_topic
-    socketcan_to_topic_node
     topic_to_socketcan
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(
+  TARGETS
+    ${PROJECT_NAME}_node
+    socketcan_to_topic_node
     topic_to_socketcan_node
-    DESTINATION lib
+    DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
