@@ -27,6 +27,7 @@ int main(int argc, char * argv[])
   auto node = rclcpp::Node::make_shared("socketcan_bridge_node");
 
   std::string can_device = node->declare_parameter("can_device", "can0");
+  node->get_parameter("can_device", can_device);
 
   can::ThreadedSocketCANInterfaceSharedPtr driver =
     std::make_shared<can::ThreadedSocketCANInterface>();
