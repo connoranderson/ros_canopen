@@ -92,7 +92,7 @@ install(
     socketcan_to_topic_node
     topic_to_socketcan
     topic_to_socketcan_node
-    DESTINATION lib/${PROJECT_NAME}
+    DESTINATION lib
 )
 
 install(
